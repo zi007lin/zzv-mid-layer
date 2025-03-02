@@ -1,0 +1,147 @@
+# Filename: .github/workflows/deploy.yml
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.cursor.json'
+      - 'docker-compose.dev.yml'
+      - 'Dockerfile.dev'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: password
+
+      kafka:
+        image: confluentinc/cp-kafka:7.9.0
+        ports:
+          - 9092:9092
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_LISTENERS: PLAINTEXT://:9092
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_PROCESS_ROLES: controller,broker
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: 1.18.2
+          otp-version: 26.0
+
+      - name: Get dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+
+      - name: Run tests
+        run: mix test
+        env:
+          MIX_ENV: test
+          DATABASE_URL: mongodb://root:password@localhost:27017/zzv_test
+          KAFKA_BROKER: localhost:9092
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/zzv-app
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Kubernetes
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Set Kubernetes context
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Update image tag in deployment
+        run: |
+          sed -i "s|image: ghcr.io/.*/zzv-app:.*|image: ghcr.io/${{ github.repository }}/zzv-app:sha-$(git rev-parse --short HEAD)|g" ./kubernetes/deployment.yaml
+
+      - name: Create secrets
+        run: |
+          kubectl create namespace zzv-production --dry-run=client -o yaml | kubectl apply -f -
+
+          # Create MongoDB secret
+          kubectl create secret generic zzv-secrets \
+            --namespace=zzv-production \
+            --from-literal=mongodb-url='${{ secrets.MONGODB_URL }}' \
+            --from-literal=secret-key-base='${{ secrets.SECRET_KEY_BASE }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Create SSH keys secret
+          kubectl create secret generic admin-ssh-keys \
+            --namespace=zzv-production \
+            --from-file=authorized_keys=./config/ssh/authorized_keys \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # Create TLS certificate secret
+          kubectl create secret tls zzv-tls-secret \
+            --namespace=zzv-production \
+            --cert=${{ secrets.TLS_CERT_PATH }} \
+            --key=${{ secrets.TLS_KEY_PATH }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f ./kubernetes/
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/zzv-app -n zzv-production --timeout=300s

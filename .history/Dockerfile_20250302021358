@@ -1,0 +1,72 @@
+# Elixir Phoenix Application Dockerfile optimized for Kubernetes deployment
+FROM elixir:1.18.2 AS builder
+
+# Set environment for build
+ENV MIX_ENV=prod \
+    LANG=C.UTF-8
+
+# Install build dependencies
+RUN apt-get update -y && \
+    apt-get install -y build-essential git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install hex + rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Create app directory
+WORKDIR /app
+
+# Copy dependency files for better caching
+COPY mix.exs mix.lock ./
+RUN mix deps.get --only prod
+RUN mix deps.compile
+
+# Copy application code
+COPY . .
+
+# Compile and build release
+RUN mix compile
+RUN mix phx.digest
+RUN mix release
+
+# Create final image
+FROM ubuntu:22.04.5
+
+# Install runtime dependencies
+RUN apt-get update -y && \
+    apt-get install -y libstdc++6 openssl ca-certificates ncurses-bin curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV LANG=C.UTF-8 \
+    LANGUAGE=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PHX_SERVER=true \
+    MIX_ENV=prod \
+    PORT=4000 \
+    KAFKA_BROKER="kafka.default.svc.cluster.local:9092" \
+    DATABASE_URL="mongodb://username:password@mongodb.default.svc.cluster.local:27017"
+
+# Create a non-root user
+RUN groupadd -r app && useradd -r -g app app
+
+WORKDIR /app
+
+# Copy the release from the builder stage
+COPY --from=builder --chown=app:app /app/_build/prod/rel/your_app_name ./
+
+# Port configuration for Kubernetes
+EXPOSE 4000
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:4000/health || exit 1
+
+# Use non-root user
+USER app
+
+# Start the Phoenix app
+CMD ["/app/bin/your_app_name", "start"]

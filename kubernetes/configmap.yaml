@@ -1,0 +1,9 @@
+# Filename: ./kubernetes/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zzv-config
+  namespace: zzv-production
+data:
+  kafka-broker: "kafka.zzv.io:9092"
+---

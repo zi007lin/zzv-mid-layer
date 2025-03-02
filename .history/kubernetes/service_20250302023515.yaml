@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zzv-app
+  namespace: zzv-production
+spec:
+  selector:
+    app: zzv-app
+  ports:
+  - port: 443
+    targetPort: 443
+    name: https
+  - port: 22
+    targetPort: 22
+    name: ssh
+  type: ClusterIP
