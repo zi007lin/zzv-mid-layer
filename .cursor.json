@@ -14,6 +14,8 @@
     "format": "docker-compose -f docker-compose.dev.yml exec zzv-app mix format",
     "deps": "docker-compose -f docker-compose.dev.yml exec zzv-app mix deps.get",
     "iex": "docker-compose -f docker-compose.dev.yml exec zzv-app iex -S mix",
-    "logs": "docker-compose -f docker-compose.dev.yml logs -f zzv-app"
+    "logs": "docker-compose -f docker-compose.dev.yml logs -f zzv-app",
+    "ollama-pull": "docker-compose -f docker-compose.dev.yml exec ollama ollama pull llama3",
+    "ollama-list": "docker-compose -f docker-compose.dev.yml exec ollama ollama list"
   }
 }

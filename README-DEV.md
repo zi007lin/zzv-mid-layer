@@ -69,6 +69,22 @@ The following secrets must be configured in GitHub:
 - `PORT`: Application port (4000 for development)
 - `DOMAIN`: Domain name (localhost for development)
 
+## Using Ollama in Development
+
+The development environment includes Ollama for AI model inference:
+
+- Models are stored in the `ollama_data` volume
+- Access the API at http://localhost:11434
+- Pull models using `cursor ollama-pull`
+- List available models using `cursor ollama-list`
+
+### Example Usage in Phoenix
+
+```elixir
+alias ZzvApp.Ollama.Client
+
+{:ok, response} = Client.generate("Explain how Kafka and Phoenix work together")
+
 ### Production
 
 - `MIX_ENV`: Set to `prod` for production
@@ -86,3 +102,4 @@ The application is designed to:
 2. Provide SSH administration access for admin users
 3. Run in a Kubernetes environment for production
 4. Scale horizontally as needed
+
