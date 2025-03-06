@@ -315,10 +315,12 @@ install_kubernetes() {
 
     # Add Kubernetes repository
     log_info "Adding Kubernetes repository..."
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null <<EOF
-deb https://apt.kubernetes.io/ kubernetes-xenial main
-EOF
+    deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /
+    EOF
+
     sudo apt update
     check_status "Adding Kubernetes repository"
 
