@@ -25,8 +25,9 @@ The script includes several improvements over the original:
 8. **Archive creation**: Packages everything into a tar.gz file for easy sharing
 
 To use the script:
-Make it executable: `chmod +x get_setup_info.sh`
-Run it: `./get_setup_info.sh`
-Review the summary: `cat system_info_*/summary.txt`
+1. Save it to a file (e.g., `get_setup_info.sh`)
+2. Make it executable: `chmod +x get_setup_info.sh`
+3. Run it: `./get_setup_info.sh`
+4. Review the summary: `cat system_info_*/summary.txt`
 
 This will help you verify that SSH and HTTPS are properly configured to share port 443 as implemented in your setup.sh script.
