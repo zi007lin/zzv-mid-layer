@@ -1,0 +1,30 @@
+####
+setup.yml:
+  system_info:
+    - "uname -a > system_info.txt"
+    - "lsb_release -a >> system_info.txt"
+    - "df -h >> system_info.txt"
+    - "free -m >> system_info.txt"
+  installed_packages:
+    - "curl"
+    - "wget"
+    - "git"
+    - "vim"
+    - "ufw"
+  running_services:
+    - "systemctl list-units --type=service > running_services.txt"
+  network:
+    - "ip a > network_info.txt"
+    - "netstat -tulnp > network_ports.txt"
+  firewall:
+    - "ufw status > firewall_status.txt"
+    - "iptables -L > iptables_rules.txt"
+  env_variables:
+    - "printenv > env_variables.txt"
+  user_permissions:
+    - "id > user_permissions.txt"
+    - "groups > user_groups.txt"
+  finalize:
+    - "sudo systemctl daemon-reexec"
+    - "echo 'Setup complete'"
+####
