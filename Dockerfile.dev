@@ -1,0 +1,23 @@
+# Filename: Dockerfile.dev
+FROM elixir:1.18.2
+
+# Install build dependencies
+RUN apt-get update -y && \
+    apt-get install -y build-essential git curl inotify-tools && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set environment for development
+ENV MIX_ENV=dev \
+    LANG=C.UTF-8 \
+    APP_NAME=zzv_app
+
+# Install hex + rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Create and set working directory
+WORKDIR /app
+
+# Run Phoenix server in development mode
+CMD ["mix", "phx.server"]

@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zzv-app
+  namespace: zzv-production
+  labels:
+    app: zzv-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: zzv-app
+  template:
+    metadata:
+      labels:
+        app: zzv-app
+    spec:
+      containers:
+      - name: zzv-app
+        image: registry.zzv.io/zzv-app:1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 443
+          name: https
+        - containerPort: 22
+          name: ssh
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: zzv-secrets
+              key: mongodb-url
+        - name: KAFKA_BROKER
+          valueFrom:
+            configMapKeyRef:
+              name: zzv-config
+              key: kafka-broker
+        - name: SECRET_KEY_BASE
+          valueFrom:
+            secretKeyRef:
+              name: zzv-secrets
+              key: secret-key-base
+        - name: DOMAIN
+          value: "zzv.io"
+        volumeMounts:
+        - name: ssh-keys
+          mountPath: /home/admin/.ssh
+          readOnly: true
+        - name: ssl-certs
+          mountPath: /app/priv/cert
+          readOnly: true
+        resources:
+          limits:
+            cpu: "1"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        securityContext:
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 20
+          periodSeconds: 15
+      volumes:
+      - name: ssh-keys
+        secret:
+          secretName: admin-ssh-keys
+          defaultMode: 0600
+      - name: ssl-certs
+        secret:
+          secretName: zzv-ssl-certs
+          defaultMode: 0600
+---

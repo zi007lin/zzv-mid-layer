@@ -1,0 +1,20 @@
+# Filename: .cursor.json
+{
+  "name": "zzv-app",
+  "defaultBranch": "main",
+  "environments": [
+    {
+      "name": "dev",
+      "setup": "docker-compose -f docker-compose.dev.yml up -d",
+      "teardown": "docker-compose -f docker-compose.dev.yml down",
+      "ports": [4000, 27017, 9092]
+    }
+  ],
+  "commands": {
+    "test": "docker-compose -f docker-compose.dev.yml exec zzv-app mix test",
+    "format": "docker-compose -f docker-compose.dev.yml exec zzv-app mix format",
+    "deps": "docker-compose -f docker-compose.dev.yml exec zzv-app mix deps.get",
+    "iex": "docker-compose -f docker-compose.dev.yml exec zzv-app iex -S mix",
+    "logs": "docker-compose -f docker-compose.dev.yml logs -f zzv-app"
+  }
+}
