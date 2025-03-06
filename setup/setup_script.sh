@@ -127,51 +127,37 @@ install_core_dependencies() {
 setup_sslh() {
     log_info "Setting up SSLH to share port 443 between SSH and WebSocket traffic..."
 
-    # Pre-configure SSLH to run in standalone mode (bypass interactive prompt)
+    # Set debconf selection to avoid prompts
     echo "sslh sslh/inetd_or_standalone select standalone" | sudo debconf-set-selections
 
-    # Install SSLH without prompting
+    # Install SSLH non-interactively
     DEBIAN_FRONTEND=noninteractive sudo apt-get install -y sslh
 
-    # Check if port 443 is available
-    if check_port 443; then
-        log_warning "Port 443 is already in use. Checking if it's used by SSLH..."
-        if ps aux | grep -v grep | grep -q sslh; then
-            log_info "SSLH is already running, will reconfigure it"
-            sudo systemctl stop sslh
-        else
-            log_error "Port 443 is in use by another service. Please free up port 443 before continuing."
-            return 1
-        fi
-    fi
+    # Force reconfigure to standalone mode
+    sudo dpkg-reconfigure -f noninteractive sslh
 
-    # Create SSLH configuration
-    log_info "Creating SSLH configuration..."
+    # Ensure standalone mode is active
     sudo tee /etc/default/sslh > /dev/null <<EOF
-# Use sslh in standalone mode
 RUN=yes
-
-# Listen on port 443 for all interfaces
-# This configuration routes SSH traffic to local port 22 and all HTTPS/WSS traffic to Nginx on port 4443
 DAEMON_OPTS="--user sslh --listen 0.0.0.0:443 --ssh 127.0.0.1:22 --ssl 127.0.0.1:4443 --pidfile /var/run/sslh/sslh.pid"
 EOF
-    check_status "Creating SSLH configuration"
 
-    # Create the run directory if it doesn't exist
+    check_status "Configuring SSLH"
+
     sudo mkdir -p /var/run/sslh
     sudo chown sslh:sslh /var/run/sslh
 
-    # Enable and restart sslh service
+    # Enable and restart service
     sudo systemctl enable sslh
     sudo systemctl restart sslh
     check_status "Starting SSLH service"
 
-    # Verify SSLH is running
+    # Verify service status
     if ! systemctl is-active --quiet sslh; then
-        log_error "SSLH service failed to start. Check logs with: journalctl -u sslh"
+        log_error "SSLH failed to start. Check logs: journalctl -u sslh"
         return 1
     else
-        log_info "SSLH service is running successfully"
+        log_info "SSLH is running successfully"
     fi
 }
 
