@@ -88,11 +88,11 @@ install_core_dependencies() {
 
     # Install Docker and other required packages
     log_info "Installing Docker and other required packages..."
+    DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce containerd.io nginx ufw sslh
     # Pre-configure SSLH to run in standalone mode (bypass interactive prompt)
     echo "sslh sslh/inetd_or_standalone select standalone" | sudo debconf-set-selections
     # Configure apt to automatically select the package maintainer's version for config files
-    export DEBIAN_FRONTEND=noninteractive
-    sudo apt-get -y -o Dpkg::Options::="--force-confnew"
+
     sudo apt-get install -y docker-ce containerd.io nginx ufw sslh
     check_status "Installing Docker and other packages"
 
