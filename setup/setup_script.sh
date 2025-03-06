@@ -7,9 +7,9 @@ set -e
 trap 'echo "Error on line $LINENO. Exit code: $?"' ERR
 
 # Global variables - replace these with your actual IP addresses
-NAM_IP=${NAM_IP:-"your_nam_ip"}
-EMEA_IP=${EMEA_IP:-"your_emea_ip"}
-APAC_IP=${APAC_IP:-"your_apac_ip"}
+NAM_IP=${NAM_IP:-"212.56.32.206"}
+EMEA_IP=${EMEA_IP:-"144.91.76.244"}
+APAC_IP=${APAC_IP:-"109.123.234.173"}
 DOMAIN=${DOMAIN:-"yourdomain.com"}
 
 # Log file setup
