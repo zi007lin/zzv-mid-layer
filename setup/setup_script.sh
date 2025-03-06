@@ -844,4 +844,50 @@ setup_letsencrypt() {
 
     # Verify certificate installation
     log_info "Verifying certificate installation..."
-    sudo certbot --nginx -d ${DOMAIN
+    sudo certbot --nginx -d ${DOMAIN} --dry-run
+    check_status "Verifying certificate installation"
+
+    # Restart NGINX to apply new configuration
+    log_info "Restarting NGINX..."
+    sudo systemctl restart nginx
+    check_status "Restarting NGINX"
+
+    log_info "Let's Encrypt setup complete"
+}
+
+# Main execution
+log_info "Starting setup process..."
+
+# Ask for IP addresses and domain if not provided
+if [ "$NAM_IP" = "your_nam_ip" ]; then
+    read -p "Enter NAM server IP address: " NAM_IP
+fi
+
+if [ "$EMEA_IP" = "your_emea_ip" ]; then
+    read -p "Enter EMEA server IP address: " EMEA_IP
+fi
+
+if [ "$APAC_IP" = "your_apac_ip" ]; then
+    read -p "Enter APAC server IP address: " APAC_IP
+fi
+
+if [ "$DOMAIN" = "yourdomain.com" ]; then
+    read -p "Enter your domain name: " DOMAIN
+fi
+
+# Execute functions in sequence
+install_core_dependencies
+setup_sslh
+configure_nginx
+configure_firewall
+install_kubernetes
+deploy_kafka
+deploy_spring_boot
+deploy_elixir_phoenix
+deploy_mongodb
+install_prometheus
+install_grafana
+setup_letsencrypt
+
+log_info "Setup complete! Your distributed system is now ready."
+log_info "Remember to check individual services for any additional configuration."
