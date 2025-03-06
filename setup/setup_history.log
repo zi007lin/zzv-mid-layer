@@ -1,0 +1,309 @@
+    1  ls
+    2  ls -la
+    3  pwd
+    4  ls -la
+    5  ls
+    6  sudo adduser newuser
+    7  sudo adduser wallyb
+    8  su -
+    9  exit
+   10  sudo ifconfig
+   11  sudo ipconfig
+   12  sudo ifconfig
+   13  su -
+   14  ls
+   15  sudo apt update && sudo apt upgrade -y
+   16  su -
+   17  sudo apt update && sudo apt upgrade -y
+   18  ls
+   19  mkdir git
+   20  cd git
+   21  ls
+   22  git clone https://github.com/zi007lin/zzv-mid-layer.git
+   23  sudo apt update && sudo apt install -y git
+   24  git --version
+   25  git clone https://github.com/zi007lin/zzv-mid-layer.git
+   26  ls
+   27  cd zzv-mid-layer/
+   28  ls
+   29  chmod +x setup.sh
+   30  ./setup.sh
+   31  sudo nano /etc/nginx/sites-available/default
+   32  vi  /etc/nginx/sites-available/default
+   33  su -
+   34  containerd --version
+   35  sudo apt remove -y containerd.io
+   36  sudo apt install -y containerd
+   37  containerd --version
+   38  sudo apt remove -y docker docker-engine docker.io containerd runc
+   39  sudo apt update
+   40  sudo apt install -y docker-ce docker-ce-cli containerd.io
+   41  sudo systemctl enable --now docker
+   42  sudo systemctl status docker
+   43  sudo apt remove -y sslh
+   44  sudo apt install -y sslh
+   45  sudo systemctl enable --now sslh
+   46  sudo systemctl status sslh
+   47  clear
+   48  sudo systemctl status sslh
+   49  sudo nano /etc/default/sslh
+   50  sudo vi /etc/default/sslh
+   51  sudo systemctl daemon-reload
+   52  sudo systemctl restart sslh
+   53  sudo systemctl enable sslh
+   54  sudo systemctl status sslh
+   55  ssh -p 443 zilin@p1-apac.zzv.io
+   56  ls -la
+   57  sudo ufw status verbose
+   58  sudo lsof -i -P -n | grep LISTEN
+   59  sudo nmap -sT -p- localhost
+   60  sudo apt update && sudo apt install nmap -y
+   61  clear
+   62  sudo vi /etc/apt/sources.list.d/kubernetes.list
+   63  sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+   64  sudo vi /etc/apt/sources.list.d/kubernetes.list
+   65  sudo apt update
+   66  sudo apt install nmap -y
+   67  sudo nmap -sT -p- localhost
+   68  cat /etc/apt/sources.list.d/kubernetes.list
+   69  sudo apt update
+   70  sudo rm -f /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
+   71  sudo curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo tee /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg > /dev/null
+   72  gpg --show-keys /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
+   73  sudo apt update
+   74  sudo apt install nmap -y
+   75  clear
+   76  sudo apt update
+   77  gpg --show-keys /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
+   78  sudo rm -f /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
+   79  sudo mkdir -p /etc/apt/keyrings
+   80  curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo tee /etc/apt/keyrings/kubernetes-apt-keyring.gpg > /dev/null
+   81  sudo vi /etc/apt/sources.list.d/kubernetes.list
+   82  clear
+   83  sudo apt update
+   84  clear
+   85  sudo rm -f /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
+   86  sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+   87  sudo mkdir -p /etc/apt/keyrings
+   88  curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo tee /etc/apt/keyrings/kubernetes-apt-keyring.gpg > /dev/null
+   89  ls -lh /etc/apt/keyrings/
+   90  gpg --show-keys /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+   91  sudo vi /etc/apt/sources.list.d/kubernetes.list
+   92  clear
+   93  sudo apt update
+   94  sudo curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+   95  sudo mkdir -p /etc/apt/keyrings
+   96  echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+   97  sudo apt update
+   98  gpg --show-keys /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+   99  # Add the specific key for this repository
+  100  curl -fsSL https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-isv-core-stable-v1.28.gpg
+  101  # Make sure directory exists
+  102  sudo mkdir -p /etc/apt/keyrings
+  103  # Add the repository with proper signing
+  104  echo "deb [signed-by=/etc/apt/keyrings/kubernetes-isv-core-stable-v1.28.gpg] https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/v1.28/deb /" | sudo tee /etc/apt/sources.list.d/kubernetes-v1.28.list
+  105  # Update again
+  106  sudo apt update
+  107  clear
+  108  sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 234654DA9A296436
+  109  sudo apt update
+  110  clear
+  111  sudo apt update
+  112  sudo vi /etc/apt/sources.list.d/kubernetes.list
+  113  sudo apt update
+  114  # For Docker
+  115  sudo mkdir -p /etc/apt/keyrings
+  116  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  117  echo "deb [signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | sudo tee /etc/apt/sources.list.d/docker.list
+  118  # For Grafana
+  119  curl -fsSL https://packages.grafana.com/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
+  120  echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://packages.grafana.com/oss/deb stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+  121  # For Docker
+  122  sudo mkdir -p /etc/apt/keyrings
+  123  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  124  echo "deb [signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | sudo tee /etc/apt/sources.list.d/docker.list
+  125  # For Grafana
+  126  curl -fsSL https://packages.grafana.com/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
+  127  echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://packages.grafana.com/oss/deb stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+  128  ls -lh /etc/apt/keyrings/docker.gpg
+  129  clear
+  130  ls -lh /etc/apt/keyrings/grafana.gpg
+  131  sudo apt update
+  132  sudo apt install docker-ce docker-ce-cli containerd.io -y
+  133  sudo apt install grafana -y
+  134  ls -lh /etc/apt/keyrings/
+  135  cat /etc/apt/sources.list.d/docker.list
+  136  cat /etc/apt/sources.list.d/grafana.list
+  137  sudo apt update
+  138  clear
+  139  docker --version\
+  140  docker --version
+  141  kubectl version --client
+  142  sudo apt install kubeadm kubectl kubelet -y
+  143  sudo systemctl enable --now docker
+  144  sudo systemctl enable --now kubelet
+  145  sudo systemctl restart nginx
+  146  sudo systemctl status nginx
+  147  sudo journalctl -xeu nginx.service --no-pager --lines=50
+  148  sudo vi /etc/default/sslh
+  149  sudo systemctl restart sslh
+  150  sudo systemctl status sslh
+  151  kubectl get nodes
+  152  kubectl get pods -A
+  153  sudo kubeadm init
+  154  clear
+  155  sudo systemctl status containerd
+  156  clear
+  157  sudo modprobe br_netfilter
+  158  echo "br_netfilter" | sudo tee /etc/modules-load.d/k8s.conf
+  159  sudo sysctl --system
+  160  lcear
+  161  clear
+  162  sudo sysctl -w net.bridge.bridge-nf-call-iptables=1
+  163  sudo sysctl -w net.bridge.bridge-nf-call-ip6tables=1
+  164  sudo sysctl -p
+  165  sudo systemctl restart kubelet
+  166  sudo systemctl enable --now kubelet
+  167  sudo kubeadm init --ignore-preflight-errors=FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
+  168  kubectl get nodes
+  169  kubectl get pods -A
+  170  clear
+  171  sudo systemctl status kubelet
+  172  sudo systemctl status containerd
+  173  clear
+  174  sudo journalctl -u kubelet -f --no-pager | tail -n 50
+  175  ls
+  176  cd git
+  177  ls
+  178  cd zzv-mid-layer/
+  179  ls
+  180  git pull
+  181  git status
+  182  git branch
+  183  ls
+  184  cd lib
+  185  ls
+  186  cd ..
+  187  ls
+  188  git status
+  189  git pull
+  191  git pull
+  192  git remote -v
+  193  git push
+  194  git credential reject https://gitlab.com
+  195  git credential reject https://gitlab.com/
+  196  echo "url=https://gitlab.com" | git credential reject
+  197  git config --global credential.helper
+  198  git credential reject https://gitlab.com
+  199  git credential reject https://gitlab.com/zi007lin
+  200  rm ~/.git-credentials
+  201  git pull
+  202  ls
+  203  cd ..
+  204  ls
+  205  rm -Rf zzv-mid-layer/
+  208  remote: HTTP Basic: Access denied. If a password was provided for Git authentication, the password was incorrect or you're required to use a token instead of a password. If a token was provided, it was either incorrect, expired, or improperly scoped. See https://gitlab.com/help/topics/git/troubleshooting_git.md#error-on-git-fetch-http-basic-access-denied
+fatal: Authentication failed for 'https://gitlab.com/zi007lin/zzv-mid-layer.git/'
+zilin@vmi2025513:~/git$
+d tq
+  210  ls
+  211  git clone https://github.com/zi007lin/zzv-mid-layer.git
+  212  ls
+  213  cd zzv-mid-layer/
+  214  ls
+  215  git pull
+  216  ls -la
+  217  git branch
+  218  git pull
+  219  cd setup
+  220  ls
+  221  chmod +x setup.sh
+  222  chmod +x setup_script.sh
+  223  chmod +x get_setup_info.sh
+  224  ls
+  225  cat SETUP_README.md
+  226  ./get_setup_info.sh
+  227  ls
+  228  ./setup.sh
+  229  ls
+  230  vi get_setup_info.sh
+  231  sudo snap install yq
+  232  sudo install snap
+  233  sudo add-apt-repository universe
+  234  sudo apt update
+  235  sudo apt install -y yq
+  236  vi get_setup_info.sh
+  237  ls
+  238  vi setup.sh
+  239  ls
+  240  ./setup.sh
+  241  clear
+  242  ls /etc/apt/sources.list.d/
+  243  sudo apt update
+  244  sudo rm /etc/apt/sources.list.d/archive_uri-https_packages_grafana_com_oss_deb-jammy.list
+  245  sudo rm /etc/apt/sources.list.d/archive_uri-https_download_docker_com_linux_ubuntu-jammy.list
+ 246  yq --version
+  247  sudo snap install yq
+  248  sudo install snap
+  249  sudo apt install snap
+  250  sudo snap isntall yq
+  251  snap --version
+  252  sudo apt install snapd
+  253  snap --version
+  254  sudo snap install yq
+  255  sudo add-apt-repository universe
+  256  sudo apt update
+  257  sudo apt install -y yq
+  258  yq --vserion
+  259  ls
+  260  ./setup.sh
+  261  git pull
+  262  ls
+  263  chmod+x setup_test.sh
+  264  chmod +x setup_test.sh
+  265  ./setup_test.sh
+  266  ls
+  267  ls -la
+  268  history
+  269  hsitory > setup_history.log
+  270  history > setup_history.log
+  271  ls
+  272  more setup_history.log
+  273  ls
+  274  git add .
+  275  ls
+  276  git commit -m"setup history"
+  277  git commit -m"setup_test and setup_history commit"
+  278  git push
+  279  ls
+  280  git remote -v
+  282  git push
+  283  git remote -v
+  284  git add .
+  285  git commit -m"everything"
+  286  git pull
+  287  git push
+  291  git push
+  292  gi tpull
+  293  git pull
+  294  git remote -v
+  295  git remote set-url origin https://github.com/zi007lin/zzv-mid-layer
+  296  git pull
+  297  git push
+  298  ls
+  299  git status
+  300  git reset --hard
+  301  git pull
+  302  git status
+  303  On branch main
+  304  Your branch is ahead of 'origin/main' by 1 commit.
+  305  nothing to commit, working tree clean
+  306  q
+  307  git push origin main
+  308  ls
+  309  git pull
+  310  git status
+  311  git reset --hard origin/main
+  312  git status
+  313  ls
+  314  history > setup_history.log
