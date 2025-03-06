@@ -833,3 +833,15 @@ setup_letsencrypt() {
 
     if [ "$DOMAIN_IP" = "not_resolved" ]; then
         log_warning "Domain ${DOMAIN} does not resolve to any IP address. Let's Encrypt will fail."
+    else
+        log_info "Domain ${DOMAIN} resolves to IP ${DOMAIN_IP}"
+    fi
+
+    # Run certbot
+    log_info "Running certbot..."
+    sudo certbot --nginx -d ${DOMAIN}
+    check_status "Running certbot"
+
+    # Verify certificate installation
+    log_info "Verifying certificate installation..."
+    sudo certbot --nginx -d ${DOMAIN
