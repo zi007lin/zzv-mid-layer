@@ -339,6 +339,18 @@ install_kubernetes() {
     sudo systemctl enable kubelet
     check_status "Installing Kubernetes components"
 
+
+    #Make sure kubeadm is available before using it
+
+    if command_exists kubeadm; then
+        # Configure hostname and proceed with kubeadm init
+        HOSTNAME=$(hostname)
+        # Rest of the kubeadm logic...
+    else
+        log_error "kubeadm was not properly installed"
+        return 1
+    fi
+
     # Configure hostname
     HOSTNAME=$(hostname)
 
