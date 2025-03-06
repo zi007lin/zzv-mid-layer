@@ -12,6 +12,7 @@ EMEA_IP=${EMEA_IP:-"144.91.76.244"}
 APAC_IP=${APAC_IP:-"109.123.234.173"}
 DOMAIN=${DOMAIN:-"yourdomain.com"}
 
+
 # Log file setup
 LOGFILE="setup_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOGFILE") 2>&1
