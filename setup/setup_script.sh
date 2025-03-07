@@ -2,7 +2,7 @@
 
 # Exit on error
 set -e
-
+set -x  # Print each command before executing
 # Enable error tracing
 trap 'echo "Error on line $LINENO. Exit code: $?"' ERR
 
@@ -53,6 +53,8 @@ command_exists() {
 
 # Function to check if a port is in use
 check_port() {
+    sudo apt install -y net-tools
+    
     local port=$1
     if netstat -tuln | grep -q ":$port "; then
         log_warning "Port $port is already in use"
