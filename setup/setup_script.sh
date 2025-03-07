@@ -930,8 +930,8 @@ install_core_dependencies
 setup_sslh
 configure_nginx
 configure_firewall
-install_kubernetes
 ensure_docker_compose
+install_kubernetes
 deploy_kafka
 deploy_spring_boot
 deploy_elixir_phoenix
