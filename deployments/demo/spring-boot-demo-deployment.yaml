@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-boot-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spring-boot-demo
+  template:
+    metadata:
+      labels:
+        app: spring-boot-demo
+    spec:
+      containers:
+      - name: spring-boot-demo
+        image: myrepo/spring-kafka-streams:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-demo:9092"
+        - name: SPRING_DATA_MONGODB_URI
+          value: "mongodb://mongodb-demo:27017/mydatabase"

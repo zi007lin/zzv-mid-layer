@@ -335,6 +335,16 @@ install_kubernetes() {
     log_info "Kubernetes installation completed successfully"
 }
 
+# Function to ensure docker-compose is installed
+ensure_docker_compose() {
+    if ! command -v docker-compose &>/dev/null; then
+        log_info "Installing Docker Compose..."
+        sudo apt update
+        sudo apt install -y docker-compose
+    fi
+    log_info "Docker Compose is installed."
+}
+
 # Function to deploy Kafka KRaft Cluster
 deploy_kafka() {
     log_info "Deploying Kafka KRaft Cluster..."
@@ -394,6 +404,18 @@ EOF
         log_error "Kafka container failed to start. Check logs with: docker logs kafka_kraft"
         return 1
     fi
+}
+
+# Function to start Kafka
+start_kafka() {
+    log_info "Starting Kafka with Docker Compose..."
+    cd ~/kafka-deployment
+    if [ ! -f docker-compose.yml ]; then
+        log_error "docker-compose.yml is missing! Ensure setup_kafka() runs properly."
+        exit 1
+    fi
+    docker-compose up -d
+    log_info "Kafka has been started successfully."
 }
 
 # Function to deploy Java Spring Boot with Kafka Streams
@@ -867,6 +889,7 @@ setup_sslh
 configure_nginx
 configure_firewall
 install_kubernetes
+ensure_docker_compose
 deploy_kafka
 deploy_spring_boot
 deploy_elixir_phoenix
@@ -877,3 +900,17 @@ setup_letsencrypt
 
 log_info "Setup complete! Your distributed system is now ready."
 log_info "Remember to check individual services for any additional configuration."
+
+# Function to start all services
+start_all_services() {
+    log_info "Starting all services..."
+
+    # Start Kafka
+    start_kafka
+
+    # Start Spring Boot
+    start_spring_boot
+
+    # Start Elixir Phoenix
+    start_elixir_phoenix
+
