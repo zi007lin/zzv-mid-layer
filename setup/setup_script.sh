@@ -123,11 +123,12 @@ install_core_dependencies() {
 setup_sslh() {
     log_info "Setting up SSLH to share port 443 between SSH and WebSocket traffic..."
 
-    # Set debconf selection to avoid prompts
+    # Pre-configure SSLH to run in standalone mode (bypass interactive prompt)
     echo "sslh sslh/inetd_or_standalone select standalone" | sudo debconf-set-selections
 
-    # Install SSLH non-interactively
-    DEBIAN_FRONTEND=noninteractive sudo apt-get install -y sslh
+    # Install SSLH without prompting
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt-get install -y sslh
 
     # Force reconfigure to standalone mode
     sudo dpkg-reconfigure -f noninteractive sslh
