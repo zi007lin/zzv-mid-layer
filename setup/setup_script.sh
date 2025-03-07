@@ -400,9 +400,9 @@ volumes:
 EOF
     check_status "Creating docker-compose.yml"
 
-    mkdir -p ~/kafka-deployment
-    if [ ! -f ~/kafka-deployment/docker-compose.yml ]; then
-        log_error "Missing docker-compose.yml in ~/kafka-deployment"
+    mkdir -p ~/git/zzv-mid-layer/kafka-deployment
+    if [ ! -f ~/git/zzv-mid-layer/kafka-deployment/docker-compose.yml ]; then
+        log_error "Missing docker-compose.yml in ~/git/zzv-mid-layer/kafka-deployment"
         exit 1
     fi
 
@@ -423,12 +423,12 @@ EOF
 # Function to start Kafka
 start_kafka() {
     log_info "Starting Kafka with Docker Compose..."
-    cd ~/kafka-deployment
+    cd ~/git/zzv-mid-layer/kafka-deployment
     if [ ! -f docker-compose.yml ]; then
         log_error "docker-compose.yml is missing! Ensure setup_kafka() runs properly."
         exit 1
     fi
-    docker-compose up -d
+    docker-compose -f ~/git/zzv-mid-layer/kafka-deployment/docker-compose.yml up -d
     log_info "Kafka has been started successfully."
 }
 
@@ -437,8 +437,8 @@ deploy_spring_boot() {
     log_info "Deploying Java Spring Boot with Kafka Streams..."
 
     # Create app directory
-    mkdir -p ~/spring-app
-    cd ~/spring-app
+    mkdir -p ~/git/zzv-mid-layer/spring-app
+    cd ~/git/zzv-mid-layer/ spring-app
 
     # Dockerfile for Spring Boot with GraalVM
     log_info "Creating Dockerfile for Spring Boot with GraalVM..."
@@ -502,8 +502,8 @@ deploy_elixir_phoenix() {
     log_info "Deploying Elixir Phoenix LiveView..."
 
     # Create app directory
-    mkdir -p ~/phoenix-app
-    cd ~/phoenix-app
+    mkdir -p ~/git/zzv-mid-layer/phoenix-app
+    cd ~/git/zzv-mid-layer/phoenix-app
 
     # Dockerfile for Phoenix
     log_info "Creating Dockerfile for Phoenix LiveView..."
