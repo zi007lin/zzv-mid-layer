@@ -308,73 +308,30 @@ EOF
 install_kubernetes() {
     log_info "Installing Kubernetes..."
 
-    # Check if Kubernetes is already installed
-    if command_exists kubectl && command_exists kubeadm; then
-        log_info "Kubernetes is already installed"
-        return 0
-    fi
-
     # Add Kubernetes repository
     log_info "Adding Kubernetes repository..."
     sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null <<EOF
-    deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /
+    deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
     EOF
 
-    sudo apt update
+    sudo apt-get update
     check_status "Adding Kubernetes repository"
 
     # Install Kubernetes components
     log_info "Installing Kubernetes components..."
-    sudo apt install -y kubeadm kubectl kubelet
+    sudo apt-get install -y kubelet kubeadm kubectl
     sudo systemctl enable kubelet
     check_status "Installing Kubernetes components"
 
-
-    #Make sure kubeadm is available before using it
-
-    if command_exists kubeadm; then
-        # Configure hostname and proceed with kubeadm init
-        HOSTNAME=$(hostname)
-        # Rest of the kubeadm logic...
-    else
-        log_error "kubeadm was not properly installed"
+    # Verify installation
+    if ! command_exists kubeadm || ! command_exists kubectl || ! command_exists kubelet; then
+        log_error "Kubernetes installation failed"
         return 1
     fi
 
-    # Configure hostname
-    HOSTNAME=$(hostname)
-
-    if [ "$HOSTNAME" = "NAM" ]; then
-        log_info "Initializing Kubernetes control plane on NAM node..."
-
-        # Disable swap (required for Kubernetes)
-        sudo swapoff -a
-        sudo sed -i '/swap/s/^/#/' /etc/fstab
-
-        # Initialize Kubernetes on the control plane (NAM VPS)
-        sudo kubeadm init --pod-network-cidr=192.168.0.0/16
-        check_status "Initializing Kubernetes control plane"
-
-        # Set up kubectl for the current user
-        mkdir -p $HOME/.kube
-        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-        sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-        # Apply the Calico network plugin
-        kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
-        check_status "Setting up Calico network plugin"
-
-        # Generate join command for worker nodes
-        JOIN_COMMAND=$(kubeadm token create --print-join-command)
-        echo "$JOIN_COMMAND" > kubernetes_join_command.txt
-        log_info "Join command saved to kubernetes_join_command.txt"
-        log_info "Use the following command to join other nodes to the cluster:"
-        echo "$JOIN_COMMAND"
-    else
-        log_info "This is not the NAM node. To join the Kubernetes cluster, run the join command provided by the NAM node."
-    fi
+    log_info "Kubernetes installation completed successfully"
 }
 
 # Function to deploy Kafka KRaft Cluster
