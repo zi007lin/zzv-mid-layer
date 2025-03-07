@@ -400,6 +400,12 @@ volumes:
 EOF
     check_status "Creating docker-compose.yml"
 
+    mkdir -p ~/kafka-deployment
+    if [ ! -f ~/kafka-deployment/docker-compose.yml ]; then
+        log_error "Missing docker-compose.yml in ~/kafka-deployment"
+        exit 1
+    fi
+
     # Start Kafka
     log_info "Starting Kafka with Docker Compose..."
     docker-compose -f ~/kafka-deployment/docker-compose.yml up -d
