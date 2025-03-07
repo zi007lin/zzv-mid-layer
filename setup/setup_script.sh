@@ -369,8 +369,8 @@ deploy_kafka() {
 
     # Create docker-compose.yml for Kafka
     log_info "Creating docker-compose.yml for Kafka..."
-    mkdir -p ~/kafka-deployment
-    cd ~/kafka-deployment
+    mkdir -p ~/git/zzv-mid-layer/kafka-deployment
+    cd ~/git/zzv-mid-layer/kafka-deployment
 
     tee docker-compose.yml > /dev/null <<EOF
 version: '3.9'
