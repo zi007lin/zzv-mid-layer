@@ -314,7 +314,13 @@ install_kubernetes() {
     # Add Kubernetes repository
     log_info "Adding Kubernetes repository..."
     sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    if [ ! -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg ]; then
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        log_info "Kubernetes repository key added."
+    else
+        log_info "Kubernetes keyring already exists, skipping."
+    fi
+    #curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null <<EOF
     deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
     EOF
