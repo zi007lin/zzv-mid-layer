@@ -128,12 +128,13 @@ setup_sslh() {
 
     # Install SSLH without prompting
     export DEBIAN_FRONTEND=noninteractive
+    sudo apt-get update
     sudo apt-get install -y sslh
 
     # Force reconfigure to standalone mode
     sudo dpkg-reconfigure -f noninteractive sslh
 
-    # Ensure standalone mode is active
+    # Ensure standalone mode is active by configuring /etc/default/sslh
     sudo tee /etc/default/sslh > /dev/null <<EOF
 RUN=yes
 DAEMON_OPTS="--user sslh --listen 0.0.0.0:443 --ssh 127.0.0.1:22 --ssl 127.0.0.1:4443 --pidfile /var/run/sslh/sslh.pid"
@@ -141,10 +142,11 @@ EOF
 
     check_status "Configuring SSLH"
 
+    # Create the run directory if it doesn't exist
     sudo mkdir -p /var/run/sslh
     sudo chown sslh:sslh /var/run/sslh
 
-    # Enable and restart service
+    # Enable and restart the sslh service
     sudo systemctl enable sslh
     sudo systemctl restart sslh
     check_status "Starting SSLH service"
@@ -157,6 +159,7 @@ EOF
         log_info "SSLH is running successfully"
     fi
 }
+
 
 # Function to configure NGINX as a reverse proxy
 configure_nginx() {
