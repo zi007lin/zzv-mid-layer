@@ -402,10 +402,33 @@ EOF
 
     mkdir -p ~/git/zzv-mid-layer/kafka-deployment
     if [ ! -f ~/git/zzv-mid-layer/kafka-deployment/docker-compose.yml ]; then
-        log_error "Missing docker-compose.yml in ~/git/zzv-mid-layer/kafka-deployment"
-        exit 1
-    fi
-
+    cat <<EOF > /home/zilin/git/zzv-mid-layer/kafka-deployment/docker-compose.yml
+version: '3.9'
+services:
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka_kraft
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - /var/lib/kafka/data:/var/lib/kafka/data
+    restart: unless-stopped
+EOF
+    check_status "Creating docker-compose.yml"
+else
+    log_info "docker-compose.yml already exists."
+fi
     # Start Kafka
     log_info "Starting Kafka with Docker Compose..."
     docker-compose -f ~/git/zzv-mid-layer/kafka-deployment/docker-compose.yml up -d
