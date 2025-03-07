@@ -408,7 +408,7 @@ EOF
 
     # Start Kafka
     log_info "Starting Kafka with Docker Compose..."
-    docker-compose -f ~/kafka-deployment/docker-compose.yml up -d
+    docker-compose -f ~/git/zzv-mid-layer/kafka-deployment/docker-compose.yml up -d
     check_status "Starting Kafka"
 
     # Check if Kafka container is running
