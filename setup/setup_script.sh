@@ -12,7 +12,6 @@ EMEA_IP=${EMEA_IP:-"144.91.76.244"}
 APAC_IP=${APAC_IP:-"109.123.234.173"}
 DOMAIN=${DOMAIN:-"yourdomain.com"}
 
-
 # Log file setup
 LOGFILE="setup_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOGFILE") 2>&1
@@ -65,7 +64,6 @@ check_port() {
     fi
 }
 
-# Function to install core dependencies
 # Function to install core dependencies
 install_core_dependencies() {
     log_info "Installing core dependencies..."
@@ -128,13 +126,12 @@ setup_sslh() {
 
     # Install SSLH without prompting
     export DEBIAN_FRONTEND=noninteractive
-    sudo apt-get update
     sudo apt-get install -y sslh
 
     # Force reconfigure to standalone mode
     sudo dpkg-reconfigure -f noninteractive sslh
 
-    # Ensure standalone mode is active by configuring /etc/default/sslh
+    # Ensure standalone mode is active
     sudo tee /etc/default/sslh > /dev/null <<EOF
 RUN=yes
 DAEMON_OPTS="--user sslh --listen 0.0.0.0:443 --ssh 127.0.0.1:22 --ssl 127.0.0.1:4443 --pidfile /var/run/sslh/sslh.pid"
@@ -142,11 +139,10 @@ EOF
 
     check_status "Configuring SSLH"
 
-    # Create the run directory if it doesn't exist
     sudo mkdir -p /var/run/sslh
     sudo chown sslh:sslh /var/run/sslh
 
-    # Enable and restart the sslh service
+    # Enable and restart service
     sudo systemctl enable sslh
     sudo systemctl restart sslh
     check_status "Starting SSLH service"
@@ -159,7 +155,6 @@ EOF
         log_info "SSLH is running successfully"
     fi
 }
-
 
 # Function to configure NGINX as a reverse proxy
 configure_nginx() {
@@ -308,6 +303,12 @@ EOF
 install_kubernetes() {
     log_info "Installing Kubernetes..."
 
+    # Check if Kubernetes is already installed
+    if command_exists kubeadm && command_exists kubectl && command_exists kubelet; then
+        log_info "Kubernetes is already installed"
+        return 0
+    fi
+
     # Add Kubernetes repository
     log_info "Adding Kubernetes repository..."
     sudo mkdir -p /etc/apt/keyrings
@@ -316,12 +317,12 @@ install_kubernetes() {
     deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
     EOF
 
-    sudo apt-get update
+    sudo apt update
     check_status "Adding Kubernetes repository"
 
     # Install Kubernetes components
     log_info "Installing Kubernetes components..."
-    sudo apt-get install -y kubelet kubeadm kubectl
+    sudo apt install -y kubeadm kubectl kubelet
     sudo systemctl enable kubelet
     check_status "Installing Kubernetes components"
 
@@ -383,7 +384,7 @@ EOF
 
     # Start Kafka
     log_info "Starting Kafka with Docker Compose..."
-    docker-compose up -d
+    docker-compose -f ~/kafka-deployment/docker-compose.yml up -d
     check_status "Starting Kafka"
 
     # Check if Kafka container is running
