@@ -66,6 +66,7 @@ check_port() {
 }
 
 # Function to install core dependencies
+# Function to install core dependencies
 install_core_dependencies() {
     log_info "Installing core dependencies..."
 
@@ -79,11 +80,8 @@ install_core_dependencies() {
     # Add Docker repository
     if ! command_exists docker; then
         log_info "Setting up Docker repository..."
-        # Create keyrings directory if it doesn't exist
         sudo mkdir -p /etc/apt/keyrings
-        # Download and add Docker's GPG key to the keyring
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-        # Add the repository with the signed-by option
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt update
     else
@@ -95,8 +93,6 @@ install_core_dependencies() {
     DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -o Dpkg::Options::="--force-confnew" docker-ce containerd.io nginx ufw sslh
     # Pre-configure SSLH to run in standalone mode (bypass interactive prompt)
     echo "sslh sslh/inetd_or_standalone select standalone" | sudo debconf-set-selections
-    # Configure apt to automatically select the package maintainer's version for config files
-    #sudo apt-get install -y docker-ce containerd.io nginx ufw sslh
     check_status "Installing Docker and other packages"
 
     # Set up Docker Compose
