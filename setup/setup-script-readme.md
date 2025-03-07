@@ -210,3 +210,67 @@ docker logs <container-name>
 - [Kubernetes Documentation](https://kubernetes.io/docs/home/)
 - [Kafka Documentation](https://kafka.apache.org/documentation/)
 - [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
+
+
+### **Debugging `setup_script.sh` in Cursor (VS Code-based IDE)**
+---
+
+#### **1. Open `setup_script.sh` in Cursor**
+- Ensure you have the script open in **Cursor (VS Code)**.
+- Verify that **Bash Debug** is installed (required for step-through debugging).
+
+---
+
+#### **2. Add Debugging Features to `setup_script.sh`**
+Modify your script to **enable debug mode**:
+```bash
+#!/bin/bash
+set -e  # Exit on error
+set -x  # Print each command before executing
+trap 'echo "Error on line $LINENO. Exit code: $?"' ERR  # Show error line
+```
+This makes debugging easier by showing **which command fails and where**.
+
+---
+
+#### **3. Run the Script with Debugging in Cursor Terminal**
+- Open **Cursor's integrated terminal** (`Ctrl + ~`).
+- Run the script in debug mode:
+  ```bash
+  bash -x setup_script.sh
+  ```
+  This shows **every command executed** and highlights errors.
+
+---
+
+#### **4. Set Breakpoints for Debugging (VS Code Bash Debugging)**
+- Install the **Bash Debug Extension** in Cursor.
+- Add a **breakpoint** inside your script:
+  ```bash
+  read -p "Press Enter to continue debugging..."
+  ```
+- Run **Bash Debugging** by selecting **Run > Start Debugging (F5)**.
+- Step through the script line-by-line.
+
+---
+
+#### **5. Redirect Debug Output to a Log File**
+If you need to analyze logs:
+```bash
+bash -x setup_script.sh > debug.log 2>&1
+```
+Then check errors:
+```bash
+grep "Error" debug.log
+```
+
+---
+
+### **Final Debugging Checklist**
+✅ **Enable `set -x` and `trap` for error messages**  
+✅ **Run with `bash -x setup_script.sh` to trace execution**  
+✅ **Use `read -p` for breakpoints and step debugging**  
+✅ **Check `debug.log` for issues after execution**  
+
+---
+🚀 **Now you can debug `setup_script.sh` efficiently inside Cursor!** 🚀
