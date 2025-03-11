@@ -8,7 +8,7 @@ verify_kubernetes() {
   if [ "$EUID" -ne 0 ]; then 
     log_error "Please run with sudo"
     return 1
-  }
+  fi
   
   # Check if K3s service is running
   if systemctl is-active --quiet k3s; then
@@ -32,7 +32,7 @@ verify_kubernetes() {
       log_error "Failed to connect to the cluster. Checking kubectl configuration..."
       kubectl config view
       return 1
-    }
+    fi
     
     NODE_STATUS=$(kubectl get nodes --no-headers 2>/dev/null | grep -v "NotReady" | wc -l)
     if [ "$NODE_STATUS" -ge 1 ]; then
