@@ -26,4 +26,3 @@ check_status() {
         exit 1  # Exit if the command fails
     fi
 }
-EOF
