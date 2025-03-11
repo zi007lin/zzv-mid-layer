@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Include logging functions (if you have utils.sh)
-source "$(dirname "$0")/utils.sh"
+sudo source "$(dirname "$0")/utils.sh"
 
 log_info "Installing Helm..."
 
@@ -24,7 +24,11 @@ helm version
 log_info "Adding Helm repository..."
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-check_status "❌ Helm repo addition failed"
-log_info "✅ Helm repo added successfully!"
+if helm repo add bitnami https://charts.bitnami.com/bitnami; then
+    log_info "✅ Helm repo added successfully!"
+else
+    log_error "❌ Helm repo addition failed"
+    exit 1
+fi
 
 log_info "✅ Helm installation complete!"

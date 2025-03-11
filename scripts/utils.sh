@@ -22,11 +22,9 @@ log_error() {
 
 # Function to check command status
 check_status() {
-  if [ $? -eq 0 ]; then
-    log_info "✅ $1 completed successfully"
-  else
-    log_error "❌ $1 failed"
-    exit 1
-  fi
+    if [ $? -ne 0 ]; then
+        log_error "❌ $1"
+        exit 1  # Exit if the command fails
+    fi
 }
 EOF
