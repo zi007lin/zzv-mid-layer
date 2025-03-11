@@ -13,8 +13,7 @@ else
     
     # Install Helm for Linux
     curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    check_status "Helm installation failed"
-
+    check_status "❌ Helm installation failed"
     log_info "✅ Helm installed successfully!"
 fi
 
@@ -25,6 +24,7 @@ helm version
 log_info "Adding Helm repository..."
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-check_status "Helm repo addition failed"
+check_status "❌ Helm repo addition failed"
+log_info "✅ Helm repo added successfully!"
 
 log_info "✅ Helm installation complete!"
