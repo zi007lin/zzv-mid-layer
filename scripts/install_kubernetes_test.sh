@@ -112,7 +112,7 @@ EOF
   
   # Cleanup test pod with error handling
   log_info "Cleaning up test pod..."
-  kubectl delete pod test-pod --grace-period=5 --force --wait=false || {
+  kubectl delete pod test-pod --grace-period=0 --force --wait=false || {
     log_warning "Failed to delete test pod gracefully, forcing deletion..."
     kubectl delete pod test-pod --grace-period=0 --force --wait=false
   }
