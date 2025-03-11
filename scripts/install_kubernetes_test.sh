@@ -127,7 +127,7 @@ main() {
   if [ ! -f "scripts/utils.sh" ]; then
     echo "Error: utils.sh not found in scripts directory"
     exit 1
-  }
+  fi    
   
   # Run verification
   verify_kubernetes
