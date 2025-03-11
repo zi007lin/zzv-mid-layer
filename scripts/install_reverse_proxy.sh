@@ -67,6 +67,11 @@ log_info "Updating service selector to match pod labels..."
 kubectl patch svc sslh-nginx -p '{"spec":{"selector":{"app.kubernetes.io/instance":"sslh", "app.kubernetes.io/name":"nginx"}}}'
 check_status "❌ Service selector update failed"
 
+# Ensure service is ClusterIP
+log_info "Ensuring service type is ClusterIP..."
+kubectl patch svc sslh-nginx -p '{"spec":{"type":"ClusterIP"}}'
+check_status "❌ Service type update failed"
+
 # Create WebSockets Ingress Configuration file if it doesn't exist
 if [ ! -f "$SCRIPT_DIR/ingress-websocket.yaml" ]; then
     log_info "Creating WebSockets Ingress configuration file..."
@@ -78,6 +83,11 @@ metadata:
   namespace: default
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "sslh-nginx"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
 spec:
   ingressClassName: nginx
   tls:
@@ -123,6 +133,11 @@ if [ -n "$ENDPOINTS" ]; then
 else
     log_warning "⚠️ Service does not have endpoints. Check selector and pod labels."
 fi
+
+# Added step to explicitly patch the Ingress port if needed
+log_info "Ensuring Ingress is configured for port 80..."
+kubectl patch ingress websocket-ingress --type=json -p='[{"op": "replace", "path": "/spec/rules/0/http/paths/0/backend/service/port/number", "value": 80}]'
+check_status "❌ Ingress port update failed"
 
 log_info "✅ Reverse Proxy Installation Complete!"
 log_info "Your application should be accessible at https://p1-emea.zzv.io"
