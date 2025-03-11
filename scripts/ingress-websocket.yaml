@@ -7,6 +7,10 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
+  tls:
+  - hosts:
+    - p1-emea.zzv.io
+    secretName: sslh-nginx-tls
   rules:
   - host: p1-emea.zzv.io
     http:

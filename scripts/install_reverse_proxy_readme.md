@@ -173,3 +173,125 @@ git push origin main
 
 ### **🚀 Now, Your System Will Run SSH, HTTPS, and WebSockets on Port 443!**
 Would you like to **add automatic SSL certificates with Let's Encrypt?** ✅
+
+
+help for troubleshoot the Kubernetes Ingress issue. Based on the information provided, you're experiencing HTTP 404 errors despite having your Ingress resource properly configured. Let's approach this systematically:
+
+## Step-by-Step Troubleshooting for Kubernetes Ingress 404 Errors
+
+### 1. Verify the Ingress Resource Configuration
+
+First, let's examine your Ingress resource:
+
+```bash
+kubectl get ingress websocket-ingress -o yaml
+```
+
+Check that:
+- The host is properly set to `p1-emea.zzv.io`
+- The backend service name is correct (`sslh-nginx`)
+- The service port is properly configured
+
+### 2. Check if the Backend Service Exists and is Running
+
+```bash
+kubectl get svc sslh-nginx
+kubectl describe svc sslh-nginx
+```
+
+Verify:
+- The service exists
+- The correct port mapping is configured (especially check the targetPort)
+- The service has endpoints (it's selecting pods that exist)
+
+### 3. Verify the Service Endpoints
+
+```bash
+kubectl get endpoints sslh-nginx
+```
+
+This should show the IP addresses of the pods. If this is empty, your service isn't selecting any pods.
+
+### 4. Check if the Pods are Running
+
+```bash
+kubectl get pods -l app=sslh-nginx
+kubectl describe pods -l app=sslh-nginx
+```
+
+Make sure the pods are in Running state and ready.
+
+### 5. Examine NGINX Configuration
+
+Check if NGINX has created the proper routing configuration:
+
+```bash
+kubectl exec -it $(kubectl get pods -l app.kubernetes.io/name=ingress-nginx -n default -o jsonpath='{.items[0].metadata.name}') -n default -- cat /etc/nginx/nginx.conf | grep -A 20 "server_name p1-emea.zzv.io"
+```
+
+### 6. Test Network Connectivity
+
+Perform a direct port-forward test:
+
+```bash
+kubectl port-forward svc/sslh-nginx 8080:8080
+```
+
+In another terminal:
+```bash
+curl -I http://localhost:8080
+```
+
+If this works but the Ingress doesn't, the issue is in the Ingress configuration.
+
+### 7. Check NGINX Logs
+
+```bash
+kubectl logs -l app.kubernetes.io/name=ingress-nginx -n default
+```
+
+Look for errors related to your host or path.
+
+### 8. Verify NGINX Controller is Working
+
+```bash
+kubectl get pods -l app.kubernetes.io/name=ingress-nginx -n default
+kubectl describe pods -l app.kubernetes.io/name=ingress-nginx -n default
+```
+
+### 9. Review sslh-nginx Configuration
+
+Since sslh-nginx might be handling both TLS and non-TLS traffic:
+
+```bash
+kubectl get configmap -l app=sslh-nginx
+kubectl describe configmap -l app=sslh-nginx
+```
+
+### 10. Test with Different HTTP Methods
+
+```bash
+curl -X GET https://p1-emea.zzv.io --insecure
+curl -X POST https://p1-emea.zzv.io --insecure
+```
+
+### 11. Recreate Ingress Resource
+
+If all else fails, try recreating the Ingress:
+
+```bash
+kubectl delete ingress websocket-ingress
+kubectl apply -f your-ingress-file.yaml
+```
+
+### 12. Check for TLS/SSL Issues
+
+If you're using HTTPS:
+
+```bash
+kubectl get secret your-tls-secret
+kubectl describe secret your-tls-secret
+```
+
+Ensure the certificate is valid and properly configured.
+
