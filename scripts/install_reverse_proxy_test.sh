@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-source "$(dirname "$0")/utils.sh"
+. "$(dirname "$0")/utils.sh"
 
 log_info "Testing Reverse Proxy Setup..."
 

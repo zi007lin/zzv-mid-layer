@@ -1,5 +1,6 @@
-cat > scripts/utils.sh << 'EOF'
-#!/bin/bash
+##cat > scripts/utils.sh << 'EOF'
+
+#!/usr/bin/env bash
 
 # Color codes
 GREEN='\033[0;32m'

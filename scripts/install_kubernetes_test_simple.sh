@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+. "$(dirname "$0")/utils.sh"
+
 verify_kubernetes_simple() {
   log_info "Verifying K3s installation..."
   

@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Include logging functions (if you have utils.sh)
-sudo source "$(dirname "$0")/utils.sh"
+. "$(dirname "$0")/utils.sh"
 
 log_info "Installing Helm..."
 

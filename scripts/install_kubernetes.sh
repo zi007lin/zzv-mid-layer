@@ -1,5 +1,6 @@
-#!/bin/bash
-source scripts/utils.sh
+#!/usr/bin/env bash
+
+. "$(dirname "$0")/utils.sh"
 
 install_kubernetes() {
     log_info "Installing K3s (lightweight Kubernetes distribution)..."

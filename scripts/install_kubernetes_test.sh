@@ -1,5 +1,6 @@
-#!/bin/bash
-source scripts/utils.sh
+#!/usr/bin/env bash
+
+. "$(dirname "$0")/utils.sh"
 
 verify_kubernetes() {
   log_info "Verifying K3s installation..."
