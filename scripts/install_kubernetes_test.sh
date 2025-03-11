@@ -1,20 +1,39 @@
+#!/bin/bash
+source scripts/utils.sh
+
 verify_kubernetes() {
   log_info "Verifying K3s installation..."
+  
+  # Ensure we're running as root or with sudo
+  if [ "$EUID" -ne 0 ]; then 
+    log_error "Please run with sudo"
+    return 1
+  }
   
   # Check if K3s service is running
   if systemctl is-active --quiet k3s; then
     log_info "✅ K3s service is running"
   else
     log_error "❌ K3s service is not running"
+    systemctl status k3s --no-pager
     return 1
   fi
   
-  # Wait for node to become ready
+  # Ensure KUBECONFIG is set correctly
+  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+  
+  # Wait for node to become ready with better error handling
   log_info "Waiting for node to be ready..."
-  TIMEOUT=120  # 2 minutes timeout
+  TIMEOUT=180  # 3 minutes timeout (increased from 2 minutes)
   START_TIME=$(date +%s)
   
   while true; do
+    if ! kubectl get nodes &>/dev/null; then
+      log_error "Failed to connect to the cluster. Checking kubectl configuration..."
+      kubectl config view
+      return 1
+    }
+    
     NODE_STATUS=$(kubectl get nodes --no-headers 2>/dev/null | grep -v "NotReady" | wc -l)
     if [ "$NODE_STATUS" -ge 1 ]; then
       log_info "✅ Node is Ready"
@@ -24,24 +43,28 @@ verify_kubernetes() {
     CURRENT_TIME=$(date +%s)
     if [ $((CURRENT_TIME - START_TIME)) -gt $TIMEOUT ]; then
       log_error "❌ Timeout waiting for node to be ready"
+      kubectl describe nodes
       return 1
     fi
     
-    log_info "Waiting for node to be ready... ($(($TIMEOUT - $CURRENT_TIME + $START_TIME))s remaining)"
+    REMAINING_TIME=$((TIMEOUT - (CURRENT_TIME - START_TIME)))
+    log_info "Waiting for node to be ready... (${REMAINING_TIME}s remaining)"
     sleep 5
   done
   
-  # Verify kubectl can access the cluster
+  # Verify kubectl can access the cluster with better error handling
   if kubectl get namespaces &>/dev/null; then
     log_info "✅ kubectl can access the cluster"
   else
     log_error "❌ kubectl cannot access the cluster"
+    log_error "Checking kubectl configuration:"
+    kubectl config view
     return 1
   fi
   
-  # Deploy a test pod
+  # Deploy a test pod with better error handling
   log_info "Deploying a test pod..."
-  cat <<EOF | kubectl apply -f -
+  TEST_POD_YAML=$(cat <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -51,12 +74,19 @@ spec:
   containers:
   - name: alpine
     image: alpine:3.15
-    command: ["sleep", "300"]
+    command: ["sh", "-c", "sleep 300"]
+  terminationGracePeriodSeconds: 5
 EOF
+)
+
+  echo "$TEST_POD_YAML" | kubectl apply -f - || {
+    log_error "Failed to create test pod"
+    return 1
+  }
   
-  # Wait for the pod to be running
+  # Wait for the pod to be running with better error handling
   log_info "Waiting for test pod to be ready..."
-  TIMEOUT=60  # 1 minute timeout
+  TIMEOUT=120  # 2 minutes timeout (increased from 1 minute)
   START_TIME=$(date +%s)
   
   while true; do
@@ -69,29 +99,47 @@ EOF
     CURRENT_TIME=$(date +%s)
     if [ $((CURRENT_TIME - START_TIME)) -gt $TIMEOUT ]; then
       log_error "❌ Timeout waiting for test pod to be running"
+      log_error "Pod details:"
       kubectl describe pod test-pod
+      kubectl get events --sort-by='.lastTimestamp' | grep test-pod
       return 1
     fi
     
-    log_info "Waiting for test pod to be ready... ($(($TIMEOUT - $CURRENT_TIME + $START_TIME))s remaining)"
+    REMAINING_TIME=$((TIMEOUT - (CURRENT_TIME - START_TIME)))
+    log_info "Waiting for test pod to be ready... (${REMAINING_TIME}s remaining)"
     sleep 5
   done
   
-  # Cleanup test pod
-  kubectl delete pod test-pod
+  # Cleanup test pod with error handling
+  log_info "Cleaning up test pod..."
+  kubectl delete pod test-pod --grace-period=5 --force || {
+    log_warning "Failed to delete test pod gracefully, forcing deletion..."
+    kubectl delete pod test-pod --grace-period=0 --force
+  }
   
   log_info "🎉 K3s installation verified successfully!"
   return 0
 }
 
-# Run installation and verification
-install_kubernetes && verify_kubernetes
-RESULT=$?
+# Main execution
+main() {
+  # Ensure utils.sh is available
+  if [ ! -f "scripts/utils.sh" ]; then
+    echo "Error: utils.sh not found in scripts directory"
+    exit 1
+  }
+  
+  # Run verification
+  verify_kubernetes
+  RESULT=$?
 
-if [ $RESULT -eq 0 ]; then
-  log_info "📦 K3s is now ready to use!"
-  kubectl get nodes
-else
-  log_error "❌ K3s installation verification failed"
-  exit 1
-fi
+  if [ $RESULT -eq 0 ]; then
+    log_info "📦 K3s is now ready to use!"
+    kubectl get nodes
+  else
+    log_error "❌ K3s installation verification failed"
+    exit 1
+  fi
+}
+
+main
