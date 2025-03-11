@@ -110,13 +110,25 @@ EOF
     sleep 5
   done
   
-  # Cleanup test pod with error handling
+  # Cleanup test pod with better error handling
   log_info "Cleaning up test pod..."
-  kubectl delete pod test-pod --grace-period=0 --force --wait=false || {
-    log_warning "Failed to delete test pod gracefully, forcing deletion..."
-    kubectl delete pod test-pod --grace-period=0 --force --wait=false
-  }
+  if kubectl get pod test-pod &>/dev/null; then
+    log_info "Attempting graceful pod deletion..."
+    if ! kubectl delete pod test-pod --wait=true --timeout=30s; then
+      log_warning "Graceful deletion failed, forcing pod removal..."
+      kubectl delete pod test-pod --force --grace-period=0
+      # Wait briefly to ensure pod is removed
+      sleep 5
+    fi
+  fi
   
+  # Verify pod is gone
+  if kubectl get pod test-pod &>/dev/null; then
+    log_warning "Pod deletion may not be complete, but continuing..."
+  else
+    log_info "✅ Test pod cleaned up successfully"
+  fi
+
   log_info "🎉 K3s installation verified successfully!"
   return 0
 }
