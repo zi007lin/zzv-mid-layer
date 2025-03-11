@@ -1,5 +1,3 @@
-##cat > scripts/utils.sh << 'EOF'
-
 #!/usr/bin/env bash
 
 # Color codes
