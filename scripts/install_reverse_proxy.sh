@@ -2,6 +2,11 @@
 
 . "$(dirname "$0")/utils.sh"
 
+if helm list -A | grep -q "nginx-ingress"; then
+    log_info "✅ NGINX Ingress is already installed. Skipping installation."
+    exit 0
+fi
+
 log_info "Installing NGINX Ingress Controller..."
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
