@@ -295,3 +295,49 @@ kubectl describe secret your-tls-secret
 
 Ensure the certificate is valid and properly configured.
 
+
+### reinstall everything from scratch. Here's how to do it:
+
+1. First, delete all the existing resources:
+
+```bash
+# Delete the ingress
+kubectl delete ingress websocket-ingress
+
+# Delete the backend NGINX
+helm uninstall sslh
+
+# Delete the NGINX Ingress Controller
+helm uninstall nginx-ingress
+
+# Delete the TLS secret
+kubectl delete secret sslh-nginx-tls
+```
+
+2. Wait for all resources to be deleted:
+
+```bash
+kubectl get pods
+kubectl get svc
+```
+
+Make sure there are no lingering pods or services from the previous installation.
+
+3. Then run your installation script:
+
+```bash
+./scripts/install_reverse_proxy.sh
+```
+
+This will perform a complete fresh installation of all components.
+
+If you want to be absolutely thorough, you could also check for any lingering ConfigMaps, PersistentVolumeClaims, or other resources that might have been created:
+
+```bash
+kubectl get configmaps
+kubectl get pvc
+```
+
+And delete them if necessary.
+
+Remember to update your script with all the improvements we discussed before reinstalling!
