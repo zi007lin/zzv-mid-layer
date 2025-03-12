@@ -3,9 +3,6 @@
 # Execute each script in order
 echo "Starting setup..."
 
-echo "Ensuring repository is formatted..."
-bash scripts/ensure_repo_formatted.sh  # ✅ Checked & Modified
-
 echo "Installing core dependencies..."
 bash scripts/install_core_dependencies.sh  # ✅ Checked & Modified
 
@@ -20,6 +17,9 @@ bash scripts/install_kubernetes.sh  # ✅ Checked & Modified
 
 echo "Verifying Kubernetes installation..."
 bash scripts/install_kubernetes_test.sh  # ✅ Checked & Modified
+
+echo "Ensuring repository is formatted..."
+bash scripts/ensure_repo_formatted.sh  # ✅ Checked & Modified
 
 echo "Setting up Reverse Proxy (NGINX)..."
 bash scripts/install_reverse_proxy.sh  # ✅ Checked & Modified
