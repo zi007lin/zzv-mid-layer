@@ -1,104 +1,7 @@
-### **🚀 Setting Up Helm in Your K3s Cluster**  
-I'll provide:
-1. **`install_helm.sh`** – Installs Helm on your system  
-2. **`install_helm_test.sh`** – Verifies Helm installation  
-3. **`install_helm_readme.md`** – Explains usage  
-
----
-
-## **✅ Step 1: Create `install_helm.sh`**
-This script will:
-- Install Helm  
-- Add the official Helm repository  
-- Verify installation  
-
-Save this in `scripts/install_helm.sh`:
-```bash
-#!/bin/bash
-
-# Include logging functions (if you have utils.sh)
-source "$(dirname "$0")/utils.sh"
-
-log_info "Installing Helm..."
-
-# Check if Helm is already installed
-if command -v helm &> /dev/null; then
-    log_info "✅ Helm is already installed."
-else
-    log_info "🔄 Downloading and installing Helm..."
-    
-    # Install Helm for Linux
-    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    check_status "Helm installation failed"
-
-    log_info "✅ Helm installed successfully!"
-fi
-
-# Verify Helm version
-helm version
-
-# Add Bitnami Helm repo (optional, commonly used)
-log_info "Adding Helm repository..."
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
-check_status "Helm repo addition failed"
-
-log_info "✅ Helm installation complete!"
-```
-
-Make it executable:
-```bash
-chmod +x scripts/install_helm.sh
-```
-
----
-
-## **✅ Step 2: Create `install_helm_test.sh`**
-This script verifies that:
-- Helm is installed  
-- Helm repositories are available  
-
-Save this in `scripts/install_helm_test.sh`:
-```bash
-#!/bin/bash
-
-source "$(dirname "$0")/utils.sh"
-
-log_info "Testing Helm installation..."
-
-# Check if Helm is installed
-if command -v helm &> /dev/null; then
-    log_info "✅ Helm is installed."
-else
-    log_error "❌ Helm is NOT installed."
-    exit 1
-fi
-
-# Check if Helm repositories exist
-helm repo list | grep "bitnami" &> /dev/null
-if [ $? -eq 0 ]; then
-    log_info "✅ Helm repository is configured correctly."
-else
-    log_warning "⚠️ Helm repository not found. Try running install_helm.sh again."
-fi
-
-log_info "✅ Helm test completed successfully!"
-```
-
-Make it executable:
-```bash
-chmod +x scripts/install_helm_test.sh
-```
-
----
-
-## **✅ Step 3: Create `install_helm_readme.md`**
-Save this in `scripts/install_helm_readme.md`:
-```md
 # 📦 Helm Installation Guide
 
 ## **🔹 About Helm**
-Helm is a package manager for Kubernetes that simplifies deploying applications.
+Helm is a package manager for Kubernetes that simplifies deploying applications. It uses charts - packaged collections of resources that define a Kubernetes application.
 
 ## **🔹 How to Install Helm**
 Run the following command:
@@ -107,8 +10,9 @@ Run the following command:
 ```
 
 This will:
-- Install Helm
-- Add the Bitnami repository
+- Check for prerequisites (curl)
+- Install Helm if not present
+- Add common repositories (Bitnami, Stable, Jetstack)
 - Verify installation
 
 ## **🔹 How to Verify Helm**
@@ -118,43 +22,108 @@ Run:
 ```
 This will:
 - Check if Helm is installed
-- Validate Helm repositories
+- Verify Helm version meets minimum requirements
+- Validate Helm repositories are configured correctly
+- Test basic Helm functionality
+- Check configuration permissions
 
 ## **🔹 Example: Installing NGINX with Helm**
 ```bash
 helm install my-nginx bitnami/nginx
 ```
 
-## **🔹 Updating Helm Charts**
-To update the repositories:
+To check the status of your installation:
+```bash
+helm status my-nginx
+```
+
+## **🔹 Managing Helm Charts**
+
+### Updating Repositories
 ```bash
 helm repo update
 ```
 
+### Listing Installed Charts
+```bash
+helm list
+```
+
+### Upgrading a Chart
+```bash
+helm upgrade my-nginx bitnami/nginx --set replicaCount=2
+```
+
+### Uninstalling a Chart
+```bash
+helm uninstall my-nginx
+```
+
+## **🔹 Creating Your Own Helm Chart**
+To create a basic chart structure:
+```bash
+helm create my-application
+```
+
+This generates a chart template with:
+- Chart.yaml - Metadata about your chart
+- values.yaml - Default configuration values
+- templates/ - Directory containing template files
+- charts/ - Directory for dependent charts
+
+## **🔹 Troubleshooting**
+
+### Common Issues
+
+1. **Repository not found**
+```bash
+# Re-add the repository
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+```
+
+2. **Permission denied errors**
+```bash
+# Fix Helm configuration permissions
+sudo chown -R $(id -u):$(id -g) ~/.config/helm
+sudo chown -R $(id -u):$(id -g) ~/.cache/helm
+```
+
+3. **Tiller errors (Helm 2 only)**
+If you see references to Tiller, you're using an outdated version of Helm. Our scripts install Helm 3, which doesn't use Tiller.
+
+4. **Chart installation timeouts**
+```bash
+# Increase timeout (default is 5m0s)
+helm install my-nginx bitnami/nginx --timeout 10m0s
+```
+
+## **🔹 Best Practices**
+
+1. **Version your charts** - Always specify version in Chart.yaml
+2. **Use values.yaml** - Keep default configuration in values.yaml
+3. **Document your charts** - Add detailed README.md to your charts
+4. **Validate before deploy** - Use `helm lint` and `helm template`
+5. **Use namespaces** - Install charts in appropriate namespaces
+
 ## **🔹 Uninstalling Helm**
 If you need to remove Helm:
 ```bash
-rm -rf /usr/local/bin/helm
+# Remove Helm binary
+sudo rm -rf /usr/local/bin/helm
+
+# Remove Helm configuration
+rm -rf ~/.config/helm
+rm -rf ~/.cache/helm
 ```
-```
+
+## **🔹 Additional Resources**
+- [Official Helm Documentation](https://helm.sh/docs/)
+- [Artifact Hub (find charts)](https://artifacthub.io/)
+- [Helm Best Practices](https://helm.sh/docs/chart_best_practices/)
 
 ---
 
-## **✅ Step 4: Commit and Push to GitHub**
-After creating these files, track them in Git:
-```bash
-git add scripts/install_helm.sh scripts/install_helm_test.sh scripts/install_helm_readme.md
-git commit -m "Added Helm installation and test scripts"
-git push origin main
-```
-
----
-
-## **🚀 Final Summary**
-| File | Description |
-|------|-------------|
-| `install_helm.sh` | Installs Helm and sets up repositories |
-| `install_helm_test.sh` | Verifies Helm installation |
-| `install_helm_readme.md` | Provides usage instructions |
-
-Now, **Helm is fully integrated into your Kubernetes setup!** 🚀 Would you like to automate any Helm chart deployments next?
+This installation guide is part of our K3s cluster setup. Also see:
+- `install_kubernetes.sh` - Installs K3s
+- `install_reverse_proxy.sh` - Sets up ingress and TLS
