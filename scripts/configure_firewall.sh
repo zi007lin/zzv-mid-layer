@@ -13,6 +13,7 @@ USE_ZZV_SERVERS=${USE_ZZV_SERVERS:-"false"}
 
 # Default to allow only HTTPS (port 443) publicly
 PUBLIC_PORTS=("443")
+SSH_PORT=${SSH_PORT:-"22"}  # Default SSH port
 
 # Kubernetes required ports
 K8S_API_PORT="6443"
@@ -25,18 +26,63 @@ KAFKA_CLIENT_PORT="9092"
 KAFKA_CONTROLLER_PORT="9093"
 KAFKA_INTERNAL_PORT="9094"
 
+# Validate IP list files existence
+validate_ip_files() {
+    log_info "Validating IP list files..."
+    
+    if [[ "$USE_CLOUDFLARE" == "true" ]]; then
+        if [[ ! -f "$CLOUDFLARE_IPS_FILE" ]]; then
+            log_warning "⚠️ Cloudflare IP file not found at $CLOUDFLARE_IPS_FILE"
+            
+            # Create directory if it doesn't exist
+            mkdir -p "$(dirname "$CLOUDFLARE_IPS_FILE")"
+            
+            log_info "Creating empty Cloudflare IP file. Please update it with actual IPs."
+            echo "# Cloudflare IPv4 Ranges - Please update this file with actual IPs" > "$CLOUDFLARE_IPS_FILE"
+            echo "# Visit https://www.cloudflare.com/ips/ for current IP ranges" >> "$CLOUDFLARE_IPS_FILE"
+        fi
+    fi
+    
+    if [[ "$USE_ZZV_SERVERS" == "true" ]]; then
+        if [[ ! -f "$ZZV_SERVERS_FILE" ]]; then
+            log_warning "⚠️ ZZV servers IP file not found at $ZZV_SERVERS_FILE"
+            
+            # Create directory if it doesn't exist
+            mkdir -p "$(dirname "$ZZV_SERVERS_FILE")"
+            
+            log_info "Creating empty ZZV servers IP file. Please update it with actual IPs."
+            echo "# ZZV Servers IP Allowlist - Please update this file with actual IPs" > "$ZZV_SERVERS_FILE"
+        fi
+    fi
+}
+
 backup_firewall_config() {
     log_info "Backing up current firewall configuration..."
     
     # Create backup directory if it doesn't exist
     mkdir -p $BACKUP_DIR
     
+    # Create timestamp for backup files
+    TIMESTAMP=$(date +%Y%m%d%H%M%S)
+    
     # Backup current UFW rules
-    BACKUP_FILE="$BACKUP_DIR/ufw-backup-$(date +%Y%m%d%H%M%S).rules"
+    BACKUP_FILE="$BACKUP_DIR/ufw-backup-$TIMESTAMP.rules"
     sudo ufw status verbose > "$BACKUP_FILE"
-    sudo cp /etc/ufw/user.rules "$BACKUP_FILE.user"
-    sudo cp /etc/ufw/before.rules "$BACKUP_FILE.before"
-    sudo cp /etc/ufw/after.rules "$BACKUP_FILE.after"
+    
+    # Backup configuration files
+    if [[ -f /etc/ufw/user.rules ]]; then
+        sudo cp /etc/ufw/user.rules "$BACKUP_FILE.user"
+    fi
+    
+    if [[ -f /etc/ufw/before.rules ]]; then
+        sudo cp /etc/ufw/before.rules "$BACKUP_FILE.before"
+    fi
+    
+    if [[ -f /etc/ufw/after.rules ]]; then
+        sudo cp /etc/ufw/after.rules "$BACKUP_FILE.after"
+    fi
+    
+    log_info "Backup created at: $BACKUP_FILE"
     
     check_status "Backing up firewall configuration"
 }
@@ -46,25 +92,38 @@ load_allowed_ips() {
     
     # Load Cloudflare IPs if specified
     if [[ "$USE_CLOUDFLARE" == "true" && -f "$CLOUDFLARE_IPS_FILE" ]]; then
-        log_info "Loading Cloudflare IP ranges..."
-        while read -r ip; do
-            [[ -n "$ip" && ! "$ip" =~ ^# ]] && ALLOWED_IPS+=("$ip")
+        log_info "Loading Cloudflare IP ranges from $CLOUDFLARE_IPS_FILE..."
+        
+        while IFS= read -r line; do
+            # Skip empty lines and comments
+            if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
+                ALLOWED_IPS+=("$line")
+            fi
         done < "$CLOUDFLARE_IPS_FILE"
-        log_info "Loaded ${#ALLOWED_IPS[@]} Cloudflare IP ranges"
+        
+        log_info "✅ Loaded ${#ALLOWED_IPS[@]} Cloudflare IP ranges"
     fi
     
     # Load ZZV server IPs if specified
     if [[ "$USE_ZZV_SERVERS" == "true" && -f "$ZZV_SERVERS_FILE" ]]; then
-        log_info "Loading ZZV server IP addresses..."
-        while read -r ip; do
-            [[ -n "$ip" && ! "$ip" =~ ^# ]] && ALLOWED_IPS+=("$ip")
+        log_info "Loading ZZV server IP addresses from $ZZV_SERVERS_FILE..."
+        
+        while IFS= read -r line; do
+            # Skip empty lines and comments
+            if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
+                ALLOWED_IPS+=("$line")
+            fi
         done < "$ZZV_SERVERS_FILE"
-        log_info "Loaded ${#ALLOWED_IPS[@]} ZZV server IPs"
+        
+        log_info "✅ Loaded ${#ALLOWED_IPS[@]} ZZV server IPs"
     fi
     
     # If no IPs loaded and not in development, warn
     if [[ ${#ALLOWED_IPS[@]} -eq 0 && "$ENVIRONMENT" != "development" ]]; then
-        log_warning "No allowed IPs loaded. This will restrict access to Kubernetes and Kafka only to local traffic!"
+        log_warning "⚠️ No allowed IPs loaded. This will restrict access to Kubernetes and Kafka only to local traffic!"
+        log_warning "Consider updating the IP files at:"
+        log_warning "- $CLOUDFLARE_IPS_FILE (if using Cloudflare)"
+        log_warning "- $ZZV_SERVERS_FILE (if using ZZV servers)"
     fi
 }
 
@@ -72,20 +131,17 @@ configure_base_rules() {
     log_info "Configuring base firewall rules..."
     
     # Reset UFW config
+    log_info "Resetting UFW configuration..."
     sudo ufw --force reset
     
     # Set default policies
+    log_info "Setting default policies (deny incoming, allow outgoing)..."
     sudo ufw default deny incoming
     sudo ufw default allow outgoing
     
-    # Allow SSH on custom port if configured (safeguard against lockout)
-    if [[ -n "$SSH_PORT" && "$SSH_PORT" != "22" ]]; then
-        log_info "Adding rule for SSH on port $SSH_PORT..."
-        sudo ufw allow $SSH_PORT/tcp comment 'SSH custom port'
-    else
-        log_info "Adding rule for SSH on default port 22..."
-        sudo ufw allow 22/tcp comment 'SSH default port'
-    fi
+    # Allow SSH on configured port
+    log_info "Adding rule for SSH on port $SSH_PORT..."
+    sudo ufw allow $SSH_PORT/tcp comment 'SSH access'
     
     check_status "Configuring base firewall rules"
 }
@@ -107,6 +163,10 @@ configure_public_services() {
 
 configure_kubernetes_ports() {
     log_info "Configuring Kubernetes ports..."
+    
+    # Always allow internal cluster communication
+    log_info "Allowing internal Kubernetes pod communication..."
+    sudo ufw allow from 10.0.0.0/8 to 10.0.0.0/8 comment "Kubernetes internal traffic"
     
     # If in development mode, allow from anywhere
     if [[ "$ENVIRONMENT" == "development" ]]; then
@@ -132,20 +192,16 @@ configure_kubernetes_ports() {
             done
         else
             # Only allow from internal/loopback if no allowed IPs specified
-            log_info "No allowed IPs specified. Kubernetes ports will only be accessible locally."
-            sudo ufw allow from 127.0.0.1 to any port $K8S_API_PORT proto tcp comment "K8s API from localhost"
-            sudo ufw allow from 127.0.0.1 to any port $K8S_KUBELET_PORT proto tcp comment "K8s Kubelet from localhost"
-            sudo ufw allow from 127.0.0.1 to any port $K8S_NODEPORT_RANGE proto tcp comment "K8s NodePort from localhost"
-            for port in "${K8S_ETCD_PORTS[@]}"; do
-                sudo ufw allow from 127.0.0.1 to any port $port proto tcp comment "K8s etcd from localhost"
-            done
+            log_info "No allowed IPs specified. Kubernetes ports will only be accessible locally and from cluster network."
             
-            # Also allow from internal cluster network
-            sudo ufw allow from 10.0.0.0/8 to any port $K8S_API_PORT proto tcp comment "K8s API from cluster"
-            sudo ufw allow from 10.0.0.0/8 to any port $K8S_KUBELET_PORT proto tcp comment "K8s Kubelet from cluster"
-            sudo ufw allow from 10.0.0.0/8 to any port $K8S_NODEPORT_RANGE proto tcp comment "K8s NodePort from cluster"
-            for port in "${K8S_ETCD_PORTS[@]}"; do
-                sudo ufw allow from 10.0.0.0/8 to any port $port proto tcp comment "K8s etcd from cluster"
+            # Allow from local and internal networks
+            for network in "127.0.0.1/8" "10.0.0.0/8"; do
+                sudo ufw allow from $network to any port $K8S_API_PORT proto tcp comment "K8s API from $network"
+                sudo ufw allow from $network to any port $K8S_KUBELET_PORT proto tcp comment "K8s Kubelet from $network"
+                sudo ufw allow from $network to any port $K8S_NODEPORT_RANGE proto tcp comment "K8s NodePort from $network"
+                for port in "${K8S_ETCD_PORTS[@]}"; do
+                    sudo ufw allow from $network to any port $port proto tcp comment "K8s etcd from $network"
+                done
             done
         fi
     fi
@@ -174,15 +230,14 @@ configure_kafka_ports() {
             done
         else
             # Only allow from internal/loopback if no allowed IPs specified
-            log_info "No allowed IPs specified. Kafka ports will only be accessible locally."
-            sudo ufw allow from 127.0.0.1 to any port $KAFKA_CLIENT_PORT proto tcp comment "Kafka client from localhost"
-            sudo ufw allow from 127.0.0.1 to any port $KAFKA_CONTROLLER_PORT proto tcp comment "Kafka controller from localhost"
-            sudo ufw allow from 127.0.0.1 to any port $KAFKA_INTERNAL_PORT proto tcp comment "Kafka internal from localhost"
+            log_info "No allowed IPs specified. Kafka ports will only be accessible locally and from internal network."
             
-            # Also allow from internal network
-            sudo ufw allow from 10.0.0.0/8 to any port $KAFKA_CLIENT_PORT proto tcp comment "Kafka client from internal"
-            sudo ufw allow from 10.0.0.0/8 to any port $KAFKA_CONTROLLER_PORT proto tcp comment "Kafka controller from internal"
-            sudo ufw allow from 10.0.0.0/8 to any port $KAFKA_INTERNAL_PORT proto tcp comment "Kafka internal from internal"
+            # Allow from local and internal networks
+            for network in "127.0.0.1/8" "10.0.0.0/8"; do
+                sudo ufw allow from $network to any port $KAFKA_CLIENT_PORT proto tcp comment "Kafka client from $network"
+                sudo ufw allow from $network to any port $KAFKA_CONTROLLER_PORT proto tcp comment "Kafka controller from $network"
+                sudo ufw allow from $network to any port $KAFKA_INTERNAL_PORT proto tcp comment "Kafka internal from $network"
+            done
         fi
     fi
     
@@ -219,15 +274,36 @@ verify_configuration() {
     if [[ "$ENVIRONMENT" != "development" ]]; then
         log_info "- Restricted access IPs: ${#ALLOWED_IPS[@]}"
     else
-        log_warning "Development mode: Some ports may be open to all IPs"
+        log_warning "⚠️ Development mode: Some ports may be open to all IPs"
     fi
     
-    # Note about restart
-    log_info "NOTE: Some services may need to be restarted for changed rules to take effect."
+    # Check that critical services remain accessible
+    log_info "Testing critical services accessibility..."
+    
+    # Check SSH
+    if nc -z -w3 localhost $SSH_PORT; then
+        log_info "✅ SSH port $SSH_PORT is accessible"
+    else
+        log_error "❌ SSH port $SSH_PORT is NOT accessible! This may cause lockout."
+        log_info "Allowing SSH access to prevent lockout..."
+        sudo ufw allow $SSH_PORT/tcp
+    fi
+    
+    # Check HTTPS
+    if nc -z -w3 localhost 443; then
+        log_info "✅ HTTPS port 443 is accessible"
+    else
+        log_warning "⚠️ HTTPS port 443 may not be accessible. Check your service configuration."
+    fi
+    
+    log_info "Note: Some services may need to be restarted for changed rules to take effect."
 }
 
 configure_firewall() {
-    log_info "Starting firewall configuration..."
+    log_info "Starting firewall configuration for environment: $ENVIRONMENT"
+    
+    # Validate IP list files
+    validate_ip_files
     
     # Backup existing configuration
     backup_firewall_config
@@ -247,7 +323,7 @@ configure_firewall() {
     # Verify the configuration
     verify_configuration
     
-    log_info "Firewall configuration completed successfully!"
+    log_info "✅ Firewall configuration completed successfully!"
     
     # Additional security recommendation
     log_info "SECURITY RECOMMENDATION: Consider setting up fail2ban for additional protection against brute-force attacks."
