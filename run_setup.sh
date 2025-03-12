@@ -28,6 +28,7 @@ echo "Verifying Reverse Proxy setup..."
 bash scripts/install_reverse_proxy_test.sh  # ✅ Checked & Modified
 
 echo "Configuring firewall..."
+bash scripts/create_cloudflare_ip_ranges.sh  # ✅ Checked & Modified
 bash scripts/configure_firewall.sh  # ✅ Checked & Modified
 
 # Services that need Helm deployment or further verification
