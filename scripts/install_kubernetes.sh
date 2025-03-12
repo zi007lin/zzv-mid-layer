@@ -12,6 +12,13 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Get the actual user (not root)
+if [ -n "$SUDO_USER" ]; then
+    ACTUAL_USER=$SUDO_USER
+else
+    ACTUAL_USER=$(whoami)
+fi
+
 # Default configuration
 K3S_VERSION="latest"
 K3S_CONFIG=""
@@ -184,24 +191,45 @@ install_kubernetes() {
         check_status "Enabling K3s-agent service"
     fi
     
-    # Configure kubectl with proper permissions
+    # Configure kubectl properly for the actual user
     if [ "$INSTALL_MODE" = "server" ]; then
-        log_info "Configuring kubectl..."
-        mkdir -p ~/.kube
-        sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-        sudo chown $(id -u):$(id -g) ~/.kube/config
-        check_status "Configuring kubectl"
+        log_info "Configuring kubectl for user $ACTUAL_USER..."
+        USER_HOME=$(eval echo ~$ACTUAL_USER)
+        mkdir -p $USER_HOME/.kube
+        cp /etc/rancher/k3s/k3s.yaml $USER_HOME/.kube/config
+        chown $ACTUAL_USER:$(id -gn $ACTUAL_USER) $USER_HOME/.kube/config
+        chmod 600 $USER_HOME/.kube/config
+
+        # Set KUBECONFIG environment variable permanently
+        if ! grep -q "export KUBECONFIG=" $USER_HOME/.bashrc; then
+            echo 'export KUBECONFIG=~/.kube/config' >> $USER_HOME/.bashrc
+            # Also add to current session
+            export KUBECONFIG=$USER_HOME/.kube/config
+        fi
+
+        # Verify kubectl works
+        log_info "Verifying kubectl configuration..."
+        if KUBECONFIG=$USER_HOME/.kube/config kubectl cluster-info > /dev/null 2>&1; then
+            log_info "✅ kubectl is properly configured and can connect to the cluster"
+        else
+            log_error "❌ kubectl configuration failed. Cannot connect to the cluster."
+            log_error "Manual fix: mkdir -p ~/.kube && sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown $ACTUAL_USER:$(id -gn $ACTUAL_USER) ~/.kube/config"
+            exit 1
+        fi
         
-        # Verify installation
-        log_info "Verifying K3s installation..."
-        sudo kubectl get nodes
-        check_status "K3s installation verification"
+        # Display cluster information
+        log_info "Cluster information:"
+        KUBECONFIG=$USER_HOME/.kube/config kubectl cluster-info
+        
+        # Show available nodes
+        log_info "Cluster nodes:"
+        KUBECONFIG=$USER_HOME/.kube/config kubectl get nodes
     fi
     
     log_info "✅ K3s installation completed successfully!"
     
     if [ "$INSTALL_MODE" = "server" ]; then
-        NODE_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
+        NODE_TOKEN=$(cat /var/lib/rancher/k3s/server/node-token)
         SERVER_IP=$(hostname -I | awk '{print $1}')
         log_info "To add worker nodes, run on each node:"
         log_info "curl -sfL https://get.k3s.io | K3S_URL=https://$SERVER_IP:6443 K3S_TOKEN=$NODE_TOKEN sh -"
