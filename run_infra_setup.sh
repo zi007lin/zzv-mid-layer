@@ -3,6 +3,12 @@
 # Add error handling and script termination on failure
 set -euo pipefail
 
+# Check if running as root/sudo
+if [ "$EUID" -ne 0 ]; then 
+    echo "Please run with sudo"
+    exit 1
+fi
+
 # Add script directory resolution
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
@@ -19,7 +25,8 @@ run_script() {
     
     log_info "$description"
     if [ -f "scripts/$script" ]; then
-        bash "scripts/$script" || {
+        # Preserve environment variables and run with sudo
+        sudo -E bash "scripts/$script" || {
             log_error "Failed to execute $script"
             exit 1
         }
