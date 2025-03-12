@@ -1,6 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-. "$(dirname "$0")/utils.sh"
+# Add script directory resolution
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Source utils.sh using absolute path
+source "${SCRIPT_DIR}/utils.sh"
 
 # Configuration options with defaults
 SKIP_TEST_POD=${SKIP_TEST_POD:-false}
