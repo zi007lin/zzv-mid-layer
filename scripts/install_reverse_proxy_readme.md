@@ -1,343 +1,326 @@
-### **📌 Naming Conventions for Installation, Testing, and Documentation Scripts**
-Since we're setting up **SSH, HTTPS, and WebSockets on port 443 via Helm**, the scripts should follow a clear naming pattern.
+# 🛠️ Reverse Proxy Setup for Kubernetes
 
-| **Script Type** | **Filename** | **Purpose** |
-|---------------|------------|------------|
-| **Installation Script** | `install_reverse_proxy.sh` | Installs NGINX Ingress and SSLH via Helm |
-| **Test Script** | `install_reverse_proxy_test.sh` | Verifies that SSH, HTTPS, and WebSockets are running correctly |
-| **Documentation** | `install_reverse_proxy_readme.md` | Provides setup and usage instructions |
+This guide explains how to install, configure, and test a reverse proxy setup in Kubernetes using NGINX Ingress Controller.
 
----
+## 📋 Overview
 
-## **✅ Script File Details**
-
-### **📌 1. `install_reverse_proxy.sh` (Installation Script)**
-This script:
-✅ Installs **NGINX Ingress Controller**  
-✅ Installs **SSLH for port sharing**  
-✅ Configures **Ingress for WebSockets**  
-
-```bash
-#!/bin/bash
-
-source "$(dirname "$0")/utils.sh"
-
-log_info "Installing NGINX Ingress Controller..."
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-helm install nginx-ingress ingress-nginx/ingress-nginx \
-  --set controller.service.type=LoadBalancer \
-  --set controller.service.externalTrafficPolicy=Local
-check_status "❌ NGINX Ingress installation failed"
-
-log_info "Installing SSLH for SSH and HTTPS multiplexing..."
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install sslh bitnami/nginx \
-  --set service.type=LoadBalancer \
-  --set service.ports.https=443 \
-  --set service.ports.ssh=443
-check_status "❌ SSLH installation failed"
-
-log_info "Applying WebSockets Ingress configuration..."
-kubectl apply -f "$(dirname "$0")/ingress-websocket.yaml"
-check_status "❌ WebSocket Ingress setup failed"
-
-log_info "✅ Reverse Proxy Installation Complete!"
-```
-
-Make it executable:
-```bash
-chmod +x scripts/install_reverse_proxy.sh
-```
-
----
-
-### **📌 2. `install_reverse_proxy_test.sh` (Testing Script)**
-This script:
-✅ Checks if **NGINX Ingress and SSLH are running**  
-✅ Tests **SSH connection over port 443**  
-✅ Tests **WebSockets connectivity**  
-
-```bash
-#!/bin/bash
-
-source "$(dirname "$0")/utils.sh"
-
-log_info "Testing Reverse Proxy Setup..."
-
-log_info "Checking NGINX Ingress Controller..."
-kubectl get svc | grep nginx-ingress
-check_status "❌ NGINX Ingress is not running!"
-
-log_info "Checking SSLH Service..."
-kubectl get svc | grep sslh
-check_status "❌ SSLH is not running!"
-
-log_info "Testing SSH over port 443..."
-ssh -o "StrictHostKeyChecking=no" -p 443 yourserver.com exit
-check_status "❌ SSH over port 443 failed!"
-
-log_info "Testing WebSocket connectivity..."
-if curl -s -o /dev/null -w "%{http_code}" https://yourserver.com | grep -q "101"; then
-    log_info "✅ WebSocket handshake successful!"
-else
-    log_error "❌ WebSocket handshake failed!"
-fi
-
-log_info "✅ Reverse Proxy Test Completed Successfully!"
-```
-
-Make it executable:
-```bash
-chmod +x scripts/install_reverse_proxy_test.sh
-```
-
----
-
-### **📌 3. `install_reverse_proxy_readme.md` (Documentation)**
-This file explains:
-✅ How the script works  
-✅ How to verify installation  
-✅ How to troubleshoot  
-
-```md
-# 🛠️ Reverse Proxy Setup (SSH + HTTPS + WebSockets over Port 443)
-
-## **🔹 Overview**
 This setup enables:
-- **SSH over port 443**
-- **WebSockets & HTTPS via NGINX Ingress**
-- **Multiplexing with SSLH**
+- HTTPS connections with TLS termination
+- WebSocket support for real-time applications
+- Customizable backend service routing
+- Production-ready configuration options
 
-## **🔹 Installation**
-Run:
+## 🚀 Installation
+
+### Basic Installation
+
+For a standard installation with default settings:
+
 ```bash
 ./scripts/install_reverse_proxy.sh
 ```
 
-## **🔹 Testing the Setup**
-Run:
+### Advanced Installation Options
+
+The installation script supports several customization options:
+
+```bash
+# Install with a custom domain
+./scripts/install_reverse_proxy.sh --domain=example.com
+
+# Install in a specific namespace
+./scripts/install_reverse_proxy.sh --namespace=my-namespace
+
+# Configure for production environment (more replicas, resource limits)
+./scripts/install_reverse_proxy.sh --environment=prod
+
+# Use a custom backend service name
+./scripts/install_reverse_proxy.sh --backend-name=my-backend
+
+# Enable Prometheus metrics
+./scripts/install_reverse_proxy.sh --enable-metrics
+
+# Use your own TLS certificate
+./scripts/install_reverse_proxy.sh --custom-tls-cert=/path/to/cert.pem --custom-tls-key=/path/to/key.pem
+
+# Set up multiple backend services
+./scripts/install_reverse_proxy.sh --multiple-backends --secondary-backend=api-service
+
+# Clean up on installation failure
+./scripts/install_reverse_proxy.sh --cleanup-on-failure
+```
+
+For a full list of options:
+
+```bash
+./scripts/install_reverse_proxy.sh --help
+```
+
+## 🔍 Testing the Setup
+
+### Basic Testing
+
+Verify your installation with the test script:
+
 ```bash
 ./scripts/install_reverse_proxy_test.sh
 ```
 
-### **🔹 Check Services**
+### Advanced Testing Options
+
+The test script supports the same customization options as the installation script:
+
+```bash
+# Test a custom domain
+./scripts/install_reverse_proxy_test.sh --domain=example.com
+
+# Test in a specific namespace
+./scripts/install_reverse_proxy_test.sh --namespace=my-namespace
+
+# Test metrics endpoints
+./scripts/install_reverse_proxy_test.sh --check-metrics
+
+# Test multiple backend configuration
+./scripts/install_reverse_proxy_test.sh --check-multiple-backends --secondary-backend=api-service
+
+# Run extended performance tests
+./scripts/install_reverse_proxy_test.sh --extended-tests --request-count=100 --concurrent-users=10
+```
+
+For a full list of testing options:
+
+```bash
+./scripts/install_reverse_proxy_test.sh --help
+```
+
+## 🔧 Configuration Details
+
+### Ingress Controller
+
+The NGINX Ingress Controller is configured with:
+- LoadBalancer service type for external access
+- Local external traffic policy for preserving client IP addresses
+- Optional metrics for monitoring
+- Configurable replica count for high availability
+
+### Backend Service
+
+The backend NGINX service is configured with:
+- ClusterIP service type (accessed through the Ingress)
+- Standard HTTP (80) and HTTPS (443) ports
+- Configurable replica count
+
+### TLS Configuration
+
+By default, the setup creates a self-signed TLS certificate. For production use, you can:
+- Provide your own certificate with `--custom-tls-cert` and `--custom-tls-key`
+- Set up cert-manager for automatic Let's Encrypt certificates (see Advanced Topics)
+
+### WebSocket Support
+
+The Ingress is configured with specific annotations for WebSocket support:
+- Extended timeouts for long-lived connections
+- Buffer size adjustments
+- WebSocket service identification
+
+## 📊 Monitoring Your Setup
+
+### Check Services
+
 ```bash
 kubectl get svc
 ```
+
 Look for:
-- `nginx-ingress`
-- `sslh`
+- `nginx-ingress-ingress-nginx-controller` (LoadBalancer type)
+- `[backend-name]-nginx` (ClusterIP type)
 
-### **🔹 SSH Over Port 443**
-```bash
-ssh -p 443 yourserver.com
-```
-
-### **🔹 WebSockets Test**
-Run:
-```javascript
-let socket = new WebSocket("wss://yourserver.com");
-socket.onopen = () => console.log("WebSocket connected");
-```
-
-## **🔹 Uninstall**
-```bash
-helm uninstall nginx-ingress
-helm uninstall sslh
-kubectl delete -f scripts/ingress-websocket.yaml
-```
-
-✅ Now, all traffic flows through **port 443** securely!
-```
-
----
-
-## **✅ Final Steps**
-1️⃣ **Add the scripts to Git:**
-```bash
-git add scripts/install_reverse_proxy.sh scripts/install_reverse_proxy_test.sh scripts/install_reverse_proxy_readme.md
-```
-
-2️⃣ **Commit the changes:**
-```bash
-git commit -m "🔧 Added Reverse Proxy installation and verification scripts"
-```
-
-3️⃣ **Push to GitHub:**
-```bash
-git push origin main
-```
-
----
-
-### **🚀 Now, Your System Will Run SSH, HTTPS, and WebSockets on Port 443!**
-Would you like to **add automatic SSL certificates with Let's Encrypt?** ✅
-
-
-help for troubleshoot the Kubernetes Ingress issue. Based on the information provided, you're experiencing HTTP 404 errors despite having your Ingress resource properly configured. Let's approach this systematically:
-
-## Step-by-Step Troubleshooting for Kubernetes Ingress 404 Errors
-
-### 1. Verify the Ingress Resource Configuration
-
-First, let's examine your Ingress resource:
+### Check Ingress
 
 ```bash
-kubectl get ingress websocket-ingress -o yaml
+kubectl get ingress
+kubectl describe ingress websocket-ingress
 ```
 
-Check that:
-- The host is properly set to `p1-emea.zzv.io`
-- The backend service name is correct (`sslh-nginx`)
-- The service port is properly configured
-
-### 2. Check if the Backend Service Exists and is Running
-
-```bash
-kubectl get svc sslh-nginx
-kubectl describe svc sslh-nginx
-```
-
-Verify:
-- The service exists
-- The correct port mapping is configured (especially check the targetPort)
-- The service has endpoints (it's selecting pods that exist)
-
-### 3. Verify the Service Endpoints
-
-```bash
-kubectl get endpoints sslh-nginx
-```
-
-This should show the IP addresses of the pods. If this is empty, your service isn't selecting any pods.
-
-### 4. Check if the Pods are Running
-
-```bash
-kubectl get pods -l app=sslh-nginx
-kubectl describe pods -l app=sslh-nginx
-```
-
-Make sure the pods are in Running state and ready.
-
-### 5. Examine NGINX Configuration
-
-Check if NGINX has created the proper routing configuration:
-
-```bash
-kubectl exec -it $(kubectl get pods -l app.kubernetes.io/name=ingress-nginx -n default -o jsonpath='{.items[0].metadata.name}') -n default -- cat /etc/nginx/nginx.conf | grep -A 20 "server_name p1-emea.zzv.io"
-```
-
-### 6. Test Network Connectivity
-
-Perform a direct port-forward test:
-
-```bash
-kubectl port-forward svc/sslh-nginx 8080:8080
-```
-
-In another terminal:
-```bash
-curl -I http://localhost:8080
-```
-
-If this works but the Ingress doesn't, the issue is in the Ingress configuration.
-
-### 7. Check NGINX Logs
-
-```bash
-kubectl logs -l app.kubernetes.io/name=ingress-nginx -n default
-```
-
-Look for errors related to your host or path.
-
-### 8. Verify NGINX Controller is Working
-
-```bash
-kubectl get pods -l app.kubernetes.io/name=ingress-nginx -n default
-kubectl describe pods -l app.kubernetes.io/name=ingress-nginx -n default
-```
-
-### 9. Review sslh-nginx Configuration
-
-Since sslh-nginx might be handling both TLS and non-TLS traffic:
-
-```bash
-kubectl get configmap -l app=sslh-nginx
-kubectl describe configmap -l app=sslh-nginx
-```
-
-### 10. Test with Different HTTP Methods
-
-```bash
-curl -X GET https://p1-emea.zzv.io --insecure
-curl -X POST https://p1-emea.zzv.io --insecure
-```
-
-### 11. Recreate Ingress Resource
-
-If all else fails, try recreating the Ingress:
-
-```bash
-kubectl delete ingress websocket-ingress
-kubectl apply -f your-ingress-file.yaml
-```
-
-### 12. Check for TLS/SSL Issues
-
-If you're using HTTPS:
-
-```bash
-kubectl get secret your-tls-secret
-kubectl describe secret your-tls-secret
-```
-
-Ensure the certificate is valid and properly configured.
-
-
-### reinstall everything from scratch. Here's how to do it:
-
-1. First, delete all the existing resources:
-
-```bash
-# Delete the ingress
-kubectl delete ingress websocket-ingress
-
-# Delete the backend NGINX
-helm uninstall sslh
-
-# Delete the NGINX Ingress Controller
-helm uninstall nginx-ingress
-
-# Delete the TLS secret
-kubectl delete secret sslh-nginx-tls
-```
-
-2. Wait for all resources to be deleted:
+### Check Pods
 
 ```bash
 kubectl get pods
-kubectl get svc
 ```
 
-Make sure there are no lingering pods or services from the previous installation.
+### WebSocket Test
 
-3. Then run your installation script:
+To test WebSocket connectivity:
+
+```javascript
+let socket = new WebSocket("wss://your-domain.com");
+socket.onopen = () => console.log("WebSocket connected");
+socket.onmessage = (event) => console.log("Received data:", event.data);
+socket.onerror = (error) => console.error("WebSocket error:", error);
+```
+
+## 🔥 Troubleshooting
+
+### Common Issues
+
+#### 1. Ingress Has No IP Address
+
+**Symptoms:** The `kubectl get ingress` command shows no IP address.
+
+**Solution:**
+```bash
+# Check the ingress-controller service
+kubectl get svc nginx-ingress-ingress-nginx-controller
+
+# If using MetalLB, check its configuration
+kubectl get configmap -n metallb-system
+```
+
+#### 2. 404 Not Found Errors
+
+**Symptoms:** Browser shows 404 when accessing the domain.
+
+**Solution:**
+```bash
+# Verify service endpoints
+kubectl get endpoints [backend-name]-nginx
+
+# Check if service selector matches pod labels
+kubectl get pods --show-labels
+kubectl describe svc [backend-name]-nginx
+
+# Fix service selector
+kubectl patch svc [backend-name]-nginx -p '{"spec":{"selector":{"app.kubernetes.io/instance":"[backend-name]", "app.kubernetes.io/name":"nginx"}}}'
+```
+
+#### 3. TLS Certificate Issues
+
+**Symptoms:** Browser shows certificate warnings.
+
+**Solution:**
+```bash
+# Check the TLS secret
+kubectl describe secret [backend-name]-nginx-tls
+
+# Recreate the TLS secret
+kubectl delete secret [backend-name]-nginx-tls
+./scripts/install_reverse_proxy.sh --domain=your-domain.com
+```
+
+#### 4. WebSocket Connection Failures
+
+**Symptoms:** WebSocket connections fail to establish.
+
+**Solution:**
+```bash
+# Verify ingress annotations
+kubectl get ingress websocket-ingress -o yaml | grep timeout
+
+# Check NGINX logs
+kubectl logs -l app.kubernetes.io/name=ingress-nginx-controller
+
+# Adjust timeouts if needed
+kubectl patch ingress websocket-ingress -p '{"metadata":{"annotations":{"nginx.ingress.kubernetes.io/proxy-read-timeout":"3600"}}}'
+```
+
+#### 5. Backend Service Not Found
+
+**Symptoms:** Browser shows 503 Service Unavailable.
+
+**Solution:**
+```bash
+# Check if backend pods are running
+kubectl get pods -l app.kubernetes.io/instance=[backend-name]
+
+# Get events for the pod
+kubectl describe pod [pod-name]
+
+# Restart the backend deployment
+kubectl rollout restart deployment [backend-name]-nginx
+```
+
+## 🧹 Uninstallation
+
+To completely remove the reverse proxy setup:
 
 ```bash
-./scripts/install_reverse_proxy.sh
+# Basic uninstallation
+kubectl delete ingress websocket-ingress
+kubectl delete secret [backend-name]-nginx-tls
+helm uninstall [backend-name]
+helm uninstall nginx-ingress
+
+# Or use the domain option if you customized it
+./scripts/install_reverse_proxy.sh --domain=your-domain.com --cleanup-on-failure
 ```
 
-This will perform a complete fresh installation of all components.
+## 🚀 Advanced Topics
 
-If you want to be absolutely thorough, you could also check for any lingering ConfigMaps, PersistentVolumeClaims, or other resources that might have been created:
+### Setting Up Let's Encrypt for Automatic SSL
+
+1. Install cert-manager:
+   ```bash
+   helm repo add jetstack https://charts.jetstack.io
+   helm install cert-manager jetstack/cert-manager --set installCRDs=true
+   ```
+
+2. Create an Issuer:
+   ```yaml
+   apiVersion: cert-manager.io/v1
+   kind: ClusterIssuer
+   metadata:
+     name: letsencrypt-prod
+   spec:
+     acme:
+       server: https://acme-v02.api.letsencrypt.org/directory
+       email: your-email@example.com
+       privateKeySecretRef:
+         name: letsencrypt-prod
+       solvers:
+       - http01:
+           ingress:
+             class: nginx
+   ```
+
+3. Update your Ingress annotations:
+   ```bash
+   kubectl patch ingress websocket-ingress -p '{"metadata":{"annotations":{"cert-manager.io/cluster-issuer":"letsencrypt-prod"}}}'
+   ```
+
+### Multiple Backends Example
+
+To set up routing to different backend services:
 
 ```bash
-kubectl get configmaps
-kubectl get pvc
+./scripts/install_reverse_proxy.sh --multiple-backends --secondary-backend=api-service
 ```
 
-And delete them if necessary.
+This will create an Ingress with the following routes:
+- `/` → Main backend service
+- `/api` → Secondary backend service
 
-Remember to update your script with all the improvements we discussed before reinstalling!
+### High Availability Setup
+
+For production environments with high availability:
+
+```bash
+./scripts/install_reverse_proxy.sh --environment=prod --enable-metrics
+```
+
+This configures:
+- Multiple replicas for the Ingress Controller
+- Resource requests and limits
+- Prometheus metrics for monitoring
+
+---
+
+## 📊 Reference
+
+| Component | Default Name | Purpose |
+|-----------|--------------|---------|
+| Ingress Controller | nginx-ingress | Manages external access to services |
+| Backend Service | sslh-nginx | Serves your application content |
+| Ingress Resource | websocket-ingress | Routes traffic to backend services |
+| TLS Secret | [backend-name]-nginx-tls | Stores TLS certificate |
+
+Happy reverse proxying! 🚀
