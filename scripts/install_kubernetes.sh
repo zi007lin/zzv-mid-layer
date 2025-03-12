@@ -1,6 +1,16 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-. "$(dirname "$0")/utils.sh"
+# Add script directory resolution
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Source utils.sh using absolute path
+source "${SCRIPT_DIR}/utils.sh"
+
+# Check for sudo/root
+if [ "$EUID" -ne 0 ]; then 
+    log_error "Please run with sudo"
+    exit 1
+fi
 
 # Default configuration
 K3S_VERSION="latest"
@@ -109,23 +119,23 @@ install_kubernetes() {
     # Backup existing configuration
     backup_kube_config
     
-    # Prepare K3s installation
-    INSTALL_CMD="curl -sfL https://get.k3s.io"
+    # Prepare K3s installation command with explicit sudo
+    INSTALL_CMD="sudo sh -c 'curl -sfL https://get.k3s.io"
     
     # Add version if specified
     if [ "$K3S_VERSION" != "latest" ]; then
-        INSTALL_CMD="$INSTALL_CMD | INSTALL_K3S_VERSION=$K3S_VERSION sh -"
+        INSTALL_CMD="$INSTALL_CMD | INSTALL_K3S_VERSION=$K3S_VERSION sh -'"
     else
-        INSTALL_CMD="$INSTALL_CMD | sh -"
+        INSTALL_CMD="$INSTALL_CMD | sh -'"
     fi
     
     # Configure installation mode
     if [ "$INSTALL_MODE" = "server" ]; then
         log_info "Installing K3s in server mode..."
         if [ -n "$INSTALL_OPTIONS" ]; then
-            INSTALL_CMD="curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\"$INSTALL_OPTIONS\" sh -"
+            INSTALL_CMD="sudo sh -c 'curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=\"$INSTALL_OPTIONS\" sh -'"
         else
-            INSTALL_CMD="curl -sfL https://get.k3s.io | sh -"
+            INSTALL_CMD="sudo sh -c 'curl -sfL https://get.k3s.io | sh -'"
         fi
     elif [ "$INSTALL_MODE" = "agent" ]; then
         if [ -z "$SERVER_URL" ]; then
@@ -151,13 +161,13 @@ install_kubernetes() {
         fi
         
         log_info "Installing K3s in agent mode..."
-        INSTALL_CMD="curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$K3S_TOKEN sh -"
+        INSTALL_CMD="sudo sh -c 'curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$K3S_TOKEN sh -'"
     else
         log_error "Invalid installation mode: $INSTALL_MODE. Use 'server' or 'agent'."
         exit 1
     fi
     
-    # Install K3s
+    # Install K3s with explicit sudo
     log_info "Running K3s installation..."
     eval "$INSTALL_CMD"
     check_status "Installing K3s"
@@ -174,7 +184,7 @@ install_kubernetes() {
         check_status "Enabling K3s-agent service"
     fi
     
-    # Configure kubectl
+    # Configure kubectl with proper permissions
     if [ "$INSTALL_MODE" = "server" ]; then
         log_info "Configuring kubectl..."
         mkdir -p ~/.kube
@@ -182,30 +192,9 @@ install_kubernetes() {
         sudo chown $(id -u):$(id -g) ~/.kube/config
         check_status "Configuring kubectl"
         
-        # Wait for node to become ready
-        log_info "Waiting for node to be ready..."
-        TIMEOUT=120
-        START_TIME=$(date +%s)
-        
-        while true; do
-            if kubectl get nodes 2>/dev/null | grep -q "Ready"; then
-                log_info "✅ Node is Ready"
-                break
-            fi
-            
-            CURRENT_TIME=$(date +%s)
-            if [ $((CURRENT_TIME - START_TIME)) -gt $TIMEOUT ]; then
-                log_warning "⚠️ Timeout waiting for node to be ready. Continuing anyway..."
-                break
-            fi
-            
-            log_info "Waiting for node to be ready... ($(($TIMEOUT - $CURRENT_TIME + $START_TIME))s remaining)"
-            sleep 5
-        done
-        
         # Verify installation
         log_info "Verifying K3s installation..."
-        kubectl get nodes
+        sudo kubectl get nodes
         check_status "K3s installation verification"
     fi
     
