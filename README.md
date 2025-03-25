@@ -1,32 +1,87 @@
-# zzv-mid-layer
+# ZZV Mid-Layer Observability Setup
 
-## Documentation
+## 🚀 Overview
 
-For detailed documentation, please visit our [Wiki](link-to-wiki).
+This project provides a cloud-portable, Kubernetes-native deployment framework for real-time service observability, including:
 
-## Contributing
+- ✅ OpenTelemetry Collector
+- ✅ Prometheus (metrics backend)
+- ✅ Tempo (distributed tracing backend)
+- ✅ Grafana (unified dashboarding)
+- ✅ Secure NGINX reverse proxy with TLS
+- ✅ Dynamic environment detection per VPS
 
-Contributions are welcome! Please read our [Contributing Guidelines](link-to-contributing) for details on how to submit pull requests, report issues, and contribute to the project.
+---
 
-## License
+## 📦 Directory Structure
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```
+scripts/
+  setup_env.sh            # Detects DOMAIN_NAME, REGION, VPS_NAME from DNS
+  require_env.sh          # Validates environment in all setup scripts
+  run_infra_setup.sh      # Sets up Docker, K8s, SSLH, firewall, reverse proxy
+  run_serv_setup.sh       # Deploys Kafka, Phoenix, OTEL, Prometheus, Grafana
+  configure_nginx.sh      # Adds NGINX reverse proxy routes (/grafana, /tempo, etc)
+  deploy_otel_collector.sh
+  deploy_tempo.sh
+  install_prometheus.sh
+  install_grafana.sh
+```
 
-## Support
+---
 
-For support, please open an issue in the GitHub repository or contact our support team at support@example.com.
+## ✅ Setup Instructions
 
-## Authors
+### Step 1: Detect and Export VPS Identity
 
-- Your Name (@username)
-- Contributors
+```bash
+chmod +x scripts/setup_env.sh
+./scripts/setup_env.sh
+source ~/zzv.env
+```
 
-## Acknowledgments
+### Step 2: Provision Infrastructure
 
-- List any inspirations, code snippets, etc.
-- Thank anyone whose code was used
-- Mention any references or documentation that was helpful
+```bash
+./run_infra_setup.sh
+```
 
-## Configuration
+### Step 3: Deploy Services & Observability
 
-The middleware can be configured with various options to suit your needs:
+```bash
+./run_serv_setup.sh
+```
+
+---
+
+## 🌐 Secure Access via NGINX
+
+Once deployed, access the observability stack at:
+
+- Grafana: `https://<DOMAIN_NAME>/grafana/`
+- Prometheus: `https://<DOMAIN_NAME>/prometheus/`
+- Tempo: `https://<DOMAIN_NAME>/tempo/`
+
+---
+
+## 🛠️ Validated with:
+
+- Ubuntu 24.04 LTS (Contabo VPS)
+- K3s and kubeadm
+- Cloudflare DNS for zone: `zzv.io`
+
+---
+
+## 🧪 Troubleshooting
+
+Make sure you have:
+
+- A valid TLS cert (via Let's Encrypt or manual)
+- Your `DOMAIN_NAME` matches DNS for your VPS IP
+- `ufw` does **not expose** raw ports (3000, 9090, etc) — only port `443`
+
+---
+
+## 📄 License
+
+MIT — built for internal cloud observability at scale.

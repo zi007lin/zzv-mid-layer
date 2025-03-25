@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source "$(dirname "$0")/require_env.sh"
+
 # Add error handling and script termination on failure
 set -euo pipefail
 
@@ -14,6 +16,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # Add logging functions
 source "${SCRIPT_DIR}/scripts/utils.sh"
+
 
 # Execute each script in order
 log_info "Starting infrastructure setup..."

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source "$(dirname "$0")/require_env.sh"
+
 # Modern Service Setup Script
 set -euo pipefail
 
