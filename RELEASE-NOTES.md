@@ -58,3 +58,26 @@ Then test observability pipeline access:
 - Add TLS via cert-manager for public exposure (optional)
 - Tag this release with: `git tag -a v1.0 -m "Initial observability release"` and push
 
+---
+
+## 🔖 Subrelease: `v1.0.1` — Environment-Aware Secure Deployment
+
+**Release Date:** 2025-03-24  
+**Maintainer:** Zeta.Zen
+
+### ✅ Enhancements
+
+- Introduced `setup_env.sh` to auto-detect VPS region and domain via DNS (Cloudflare `zzv.io`)
+- Added `require_env.sh` to validate essential env variables in all scripts
+- Updated all deploy scripts to:
+  - Source `~/zzv.env` dynamically
+  - Respect `$DOMAIN_NAME`, `$REGION`, `$VPS_NAME` across regions (NAM, EMEA, APAC)
+- Hardened `run_serv_setup.sh` to include inline environment validation
+- Enhanced `configure_nginx.sh` to reverse-proxy Grafana, Prometheus, and Tempo over TLS (port 443 only)
+- Updated `README.md` with full dynamic setup instructions
+
+### 🔐 Security
+
+- Disabled raw port exposure for Grafana, Prometheus, Tempo
+- TLS routing exclusively via NGINX with Let's Encrypt support
+
