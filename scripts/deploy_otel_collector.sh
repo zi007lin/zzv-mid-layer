@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "📡 Deploying OpenTelemetry Collector..."
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+NAMESPACE="observability"
+kubectl get ns "$NAMESPACE" &>/dev/null || kubectl create namespace "$NAMESPACE"
 
-kubectl apply -f "${SCRIPT_DIR}/../kubernetes/otel-collector.yaml" && \
-echo "✅ OTEL Collector deployed successfully." || {
+echo "📡 Deploying OpenTelemetry Collector into namespace: $NAMESPACE..."
+
+kubectl apply -f "${SCRIPT_DIR}/../kubernetes/otel-collector.yaml" -n "$NAMESPACE" && \
+echo "✅ OTEL Collector deployed." || {
     echo "❌ Failed to deploy OTEL Collector."
     exit 1
 }

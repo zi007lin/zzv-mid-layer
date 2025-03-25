@@ -1,12 +1,14 @@
-#!/bin/bash
-source scripts/utils.sh
+#!/usr/bin/env bash
+set -euo pipefail
 
-install_prometheus() {
-    log_info "Installing Prometheus..."
-    sudo apt install -y prometheus
-    sudo systemctl enable prometheus
-    sudo systemctl start prometheus
-    check_status "Starting Prometheus"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+NAMESPACE="observability"
+kubectl get ns "$NAMESPACE" &>/dev/null || kubectl create namespace "$NAMESPACE"
+
+echo "📊 Installing Prometheus into namespace: $NAMESPACE..."
+
+kubectl apply -f "${SCRIPT_DIR}/../kubernetes/prometheus.yaml" -n "$NAMESPACE" && \
+echo "✅ Prometheus installed." || {
+    echo "❌ Failed to install Prometheus."
+    exit 1
 }
-
-install_prometheus
