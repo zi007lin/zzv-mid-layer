@@ -1,0 +1,1 @@
+# Simulated emitter.py

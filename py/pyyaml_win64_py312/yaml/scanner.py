@@ -1,0 +1,1 @@
+# Simulated scanner.py
