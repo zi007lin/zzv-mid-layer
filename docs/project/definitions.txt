@@ -1,0 +1,4 @@
+FRI:
+Functional Requirements Document (FRD): Sometimes referred to as FRI, this document outlines the functional requirements and specifications for a project. It details what the system or product should do, including functionalities, capabilities, and behaviors expected from the system. This document is crucial for guiding the design and development phases and ensuring that all stakeholders have a clear understanding of the project requirements.
+FRE:
+Functional Requirements Engineering: This refers to the process of systematically gathering, analyzing, documenting, and managing the functional requirements of a system or product. It involves working with stakeholders to understand their needs and translating those needs into detailed functional specifications that guide the development process.
